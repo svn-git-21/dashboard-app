@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cloud Dashboard</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        slate: { 850: '#1e293b', 900: '#0f172a' }
+                    },
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    animation: { 'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite' }
+                }
+            }
+        }
+    </script>
+    
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; transition: background-color 0.3s, color 0.3s; }
+        
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(2, 300px);
+            gap: 1.5rem;
+            max-width: 1200px;
+            width: 100%;
+        }
+        
+        /* Card Styling */
+        .card {
+            background-color: #ffffff;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            display: flex; flex-direction: column; overflow: hidden;
+            transition: all 0.3s ease;
+        }
+        .dark .card {
+            background-color: #1e293b;
+            border-color: rgba(255, 255, 255, 0.05);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Input Styling */
+        .input-field {
+            width: 100%; border-radius: 0.5rem; padding: 0.75rem 1rem; font-size: 0.875rem; outline: none; transition: all 0.2s;
+            background-color: #ffffff; border: 1px solid #cbd5e1; color: #0f172a;
+        }
+        .input-field:focus { border-color: #3b82f6; ring: 2px solid #3b82f6; }
+        .dark .input-field { background-color: #0f172a; border-color: rgba(255,255,255,0.05); color: white; }
+        .dark .input-field::placeholder { color: #475569; }
+
+        /* Header Button */
+        .header-btn {
+            padding: 0.75rem; border-radius: 0.75rem; transition: all 0.2s;
+            background-color: #ffffff; border: 1px solid #e2e8f0; color: #475569; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        }
+        .header-btn:hover { background-color: #f8fafc; color: #0f172a; }
+        .dark .header-btn { background-color: #1e293b; border-color: rgba(255,255,255,0.05); color: #94a3b8; box-shadow: none; }
+        .dark .header-btn:hover { background-color: #334155; color: white; }
+
+        /* Status Dot */
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+        .status-online { background-color: #22c55e; box-shadow: 0 0 8px #22c55e; }
+        .status-offline { background-color: #94a3b8; }
+        .status-syncing { background-color: #eab308; animation: pulse 1s infinite; }
+
+        .scroller { overflow-y: auto; padding-right: 4px; }
+        .scroller::-webkit-scrollbar { width: 4px; }
+        .scroller::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        .dark .scroller::-webkit-scrollbar-thumb { background: #334155; }
+        .scroller::-webkit-scrollbar-track { background: transparent; }
+
+        @media (max-width: 1024px) { .dashboard-grid { grid-template-columns: repeat(2, 1fr); grid-template-rows: auto; } .card { min-height: 300px; } }
+        @media (max-width: 640px) { .dashboard-grid { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-center p-6 bg-slate-50 text-slate-900 dark:bg-[#0f172a] dark:text-white">
+
+    <div class="w-full max-w-[1200px] flex justify-between items-start mb-8 px-2 mt-4">
+        <div class="mt-2"> 
+            <div class="flex items-center gap-3 mb-2">
+                <h1 id="header-clock" class="text-6xl font-light tracking-tight text-slate-800 dark:text-white">00:00</h1>
+            </div>
+            <h2 id="header-greeting" class="text-xl font-medium text-slate-600 dark:text-slate-200">Good Evening, User.</h2>
+            <div class="flex items-center gap-2 mt-1">
+                <p id="header-date" class="text-sm text-slate-400 dark:text-slate-500">Loading...</p>
+                <div id="cloud-status" class="hidden items-center gap-1.5 px-2 py-0.5 rounded-full bg-slate-200 dark:bg-slate-800 text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                    <span id="cloud-dot" class="status-dot status-offline"></span>
+                    <span id="cloud-text">Offline</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="flex gap-2">
+            <button onclick="openCloudModal()" class="header-btn group relative" title="Cloud Sync Settings">
+                <i id="cloud-icon" data-lucide="cloud" class="w-5 h-5 group-hover:text-blue-500 transition"></i>
+                <span id="cloud-badge" class="absolute top-0 right-0 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white dark:border-slate-800 hidden"></span>
+            </button>
+
+            <div class="w-px h-10 bg-slate-200 dark:bg-slate-700 mx-1 self-center"></div>
+
+            <button onclick="toggleTheme()" class="header-btn" title="Toggle Theme"><i id="theme-icon" data-lucide="sun" class="w-5 h-5"></i></button>
+            <button onclick="exportData()" class="header-btn" title="Export"><i data-lucide="download" class="w-5 h-5"></i></button>
+            <button onclick="document.getElementById('file-input').click()" class="header-btn" title="Import"><i data-lucide="upload" class="w-5 h-5"></i></button>
+            <input type="file" id="file-input" class="hidden" accept=".json" onchange="importData(this)">
+        </div>
+    </div>
+
+    <div class="dashboard-grid">
+        <div class="card items-center justify-center">
+            <div class="flex items-center gap-2 mb-6 text-slate-400"><i data-lucide="clock" class="w-4 h-4"></i><span class="text-xs font-bold tracking-[0.15em] uppercase">Focus Mode</span></div>
+            <div class="mb-8 cursor-pointer group" onclick="editTimer()"><span id="timer-display" class="text-7xl font-medium tracking-wide text-slate-800 dark:text-white group-hover:text-blue-500 transition">25:00</span></div>
+            <div class="flex gap-4">
+                <button onclick="toggleTimer()" class="w-14 h-14 rounded-full bg-blue-600 hover:bg-blue-500 flex items-center justify-center transition shadow-lg shadow-blue-500/30 text-white"><i id="play-icon" data-lucide="play" class="w-6 h-6 ml-1 fill-current"></i></button>
+                <button onclick="resetTimer()" class="w-14 h-14 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 dark:bg-slate-700 dark:hover:bg-slate-600 dark:text-slate-300 flex items-center justify-center transition"><i data-lucide="rotate-ccw" class="w-6 h-6"></i></button>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="flex items-center gap-2 mb-4 text-slate-400"><i data-lucide="check-square" class="w-4 h-4"></i><span class="text-xs font-bold tracking-widest uppercase">Tasks</span></div>
+            <form onsubmit="addTask(event)" class="flex gap-2 mb-4">
+                <input id="task-input" type="text" placeholder="Add task..." class="input-field">
+                <button type="submit" class="bg-blue-600 hover:bg-blue-500 text-white px-4 rounded-lg transition flex items-center justify-center shadow-sm"><i data-lucide="plus" class="w-5 h-5"></i></button>
+            </form>
+            <div id="task-list" class="scroller flex-1 space-y-2"></div>
+        </div>
+
+        <div class="card">
+            <div class="flex items-center justify-between mb-4"><div class="flex items-center gap-2 text-slate-400"><i data-lucide="link" class="w-4 h-4"></i><span class="text-xs font-bold tracking-widest uppercase">Quick Links</span></div><button onclick="addLinkPrompt()" class="text-blue-500 hover:text-blue-400"><i data-lucide="plus" class="w-4 h-4"></i></button></div>
+            <div id="links-grid" class="grid grid-cols-2 gap-3 content-start h-full overflow-y-auto scroller"></div>
+        </div>
+
+        <div class="card">
+            <div class="flex items-center gap-2 mb-3 text-slate-400"><i data-lucide="edit-3" class="w-4 h-4"></i><span class="text-xs font-bold tracking-widest uppercase">Notes</span></div>
+            <textarea id="notes-area" class="w-full h-full bg-transparent resize-none outline-none text-sm leading-relaxed placeholder-slate-400 text-slate-700 dark:text-slate-300" placeholder="Type something..."></textarea>
+        </div>
+
+        <div class="card">
+            <div class="flex items-center justify-between mb-4"><div class="flex items-center gap-2 text-slate-400"><i data-lucide="bell" class="w-4 h-4"></i><span class="text-xs font-bold tracking-widest uppercase">Reminders</span></div><button onclick="addReminderPrompt()" class="text-blue-500 hover:text-blue-400"><i data-lucide="plus" class="w-4 h-4"></i></button></div>
+            <div id="reminder-list" class="scroller flex-1 space-y-2"></div>
+        </div>
+
+        <div class="card items-center justify-center text-center bg-slate-50 dark:bg-slate-800/50">
+            <p class="text-slate-400 dark:text-slate-500 text-sm italic max-w-[200px]" id="quote-text">"Focus is the key to productivity."</p>
+        </div>
+    </div>
+
+    <div id="cloud-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden flex items-center justify-center z-50 p-4">
+        <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl shadow-2xl w-full max-w-md border border-slate-200 dark:border-slate-800">
+            <h2 class="text-xl font-bold mb-4 dark:text-white flex items-center gap-2"><i data-lucide="cloud" class="w-5 h-5 text-blue-500"></i> Cloud Sync Setup</h2>
+            <p class="text-sm text-slate-500 mb-4 leading-relaxed">
+                To enable auto-save across devices, create a free bin at <a href="https://jsonbin.io" target="_blank" class="text-blue-500 hover:underline">jsonbin.io</a>.
+            </p>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold uppercase text-slate-400 mb-1">Master Key (X-Master-Key)</label>
+                    <input type="password" id="cloud-api-key" placeholder="Paste your API Key here" class="input-field">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase text-slate-400 mb-1">Bin ID</label>
+                    <input type="text" id="cloud-bin-id" placeholder="Paste your Bin ID here" class="input-field">
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-3 mt-6">
+                <button onclick="closeCloudModal()" class="px-4 py-2 text-sm text-slate-500 hover:text-slate-700 dark:hover:text-slate-300">Cancel</button>
+                <button onclick="saveCloudSettings()" class="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-500 shadow-lg shadow-blue-500/20">Connect & Sync</button>
+            </div>
+            
+            <button onclick="disconnectCloud()" class="w-full mt-4 text-xs text-red-400 hover:text-red-500 py-2 border-t border-slate-100 dark:border-slate-800">Disconnect / Clear Keys</button>
+        </div>
+    </div>
+
+    <script>
+        // --- 1. STATE & CLOUD LOGIC ---
+        const AppData = {
+            tasks: JSON.parse(localStorage.getItem('dash_tasks')) || [],
+            links: JSON.parse(localStorage.getItem('dash_links')) || [
+                {id: 1, name: 'Google', url: 'https://google.com', color: 'bg-blue-500'},
+                {id: 2, name: 'GitHub', url: 'https://github.com', color: 'bg-slate-500'},
+                {id: 3, name: 'YouTube', url: 'https://youtube.com', color: 'bg-red-500'},
+                {id: 4, name: 'ChatGPT', url: 'https://chat.openai.com', color: 'bg-teal-500'}
+            ],
+            reminders: JSON.parse(localStorage.getItem('dash_reminders')) || [],
+            timer: 25,
+            theme: localStorage.getItem('dash_theme') || 'dark',
+            notes: localStorage.getItem('dash_notes') || '',
+            cloud: JSON.parse(localStorage.getItem('dash_cloud_config')) || { apiKey: '', binId: '' }
+        };
+
+        let syncTimeout;
+
+        // Save Data (Local + Cloud)
+        function saveData() {
+            // 1. Local Save
+            localStorage.setItem('dash_tasks', JSON.stringify(AppData.tasks));
+            localStorage.setItem('dash_links', JSON.stringify(AppData.links));
+            localStorage.setItem('dash_reminders', JSON.stringify(AppData.reminders));
+            localStorage.setItem('dash_notes', AppData.notes);
+            localStorage.setItem('dash_theme', AppData.theme);
+
+            // 2. Cloud Save (Debounced)
+            if(AppData.cloud.apiKey && AppData.cloud.binId) {
+                updateCloudStatus('syncing');
+                clearTimeout(syncTimeout);
+                syncTimeout = setTimeout(pushToCloud, 2000); // Wait 2s after last type to save
+            }
+        }
+
+        // --- CLOUD FUNCTIONS ---
+        async function pushToCloud() {
+            try {
+                const res = await fetch(`https://api.jsonbin.io/v3/b/${AppData.cloud.binId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Master-Key': AppData.cloud.apiKey
+                    },
+                    body: JSON.stringify({ 
+                        tasks: AppData.tasks, 
+                        links: AppData.links, 
+                        reminders: AppData.reminders, 
+                        notes: AppData.notes,
+                        theme: AppData.theme 
+                    })
+                });
+
+                if(res.ok) {
+                    updateCloudStatus('online');
+                    console.log("Cloud Save Success");
+                } else {
+                    throw new Error("Save Failed");
+                }
+            } catch(e) {
+                updateCloudStatus('offline');
+                alert("Cloud Save Failed. Check your keys.");
+            }
+        }
+
+        async function pullFromCloud() {
+            if(!AppData.cloud.apiKey || !AppData.cloud.binId) return;
+            
+            updateCloudStatus('syncing');
+            try {
+                const res = await fetch(`https://api.jsonbin.io/v3/b/${AppData.cloud.binId}`, {
+                    method: 'GET',
+                    headers: { 'X-Master-Key': AppData.cloud.apiKey }
+                });
+                
+                if(res.ok) {
+                    const json = await res.json();
+                    const data = json.record;
+                    
+                    // Merge Data
+                    if(data.tasks) AppData.tasks = data.tasks;
+                    if(data.links) AppData.links = data.links;
+                    if(data.reminders) AppData.reminders = data.reminders;
+                    if(data.notes) AppData.notes = data.notes;
+                    if(data.theme) AppData.theme = data.theme;
+                    
+                    // Update UI
+                    refreshAllUI();
+                    updateCloudStatus('online');
+                }
+            } catch(e) {
+                updateCloudStatus('offline');
+                console.error(e);
+            }
+        }
+
+        // --- UI UPDATERS ---
+        function refreshAllUI() {
+            initTheme();
+            renderTasks();
+            renderLinks();
+            renderReminders();
+            document.getElementById('notes-area').value = AppData.notes;
+        }
+
+        // --- CLOUD MODAL LOGIC ---
+        function openCloudModal() {
+            document.getElementById('cloud-modal').classList.remove('hidden');
+            document.getElementById('cloud-api-key').value = AppData.cloud.apiKey;
+            document.getElementById('cloud-bin-id').value = AppData.cloud.binId;
+        }
+        function closeCloudModal() {
+            document.getElementById('cloud-modal').classList.add('hidden');
+        }
+        function saveCloudSettings() {
+            const key = document.getElementById('cloud-api-key').value.trim();
+            const bin = document.getElementById('cloud-bin-id').value.trim();
+            
+            if(key && bin) {
+                AppData.cloud = { apiKey: key, binId: bin };
+                localStorage.setItem('dash_cloud_config', JSON.stringify(AppData.cloud));
+                closeCloudModal();
+                pullFromCloud(); // Initial Sync
+            } else {
+                alert("Please enter both keys.");
+            }
+        }
+        function disconnectCloud() {
+            if(confirm("Disconnect cloud? Local data will remain.")) {
+                AppData.cloud = { apiKey: '', binId: '' };
+                localStorage.removeItem('dash_cloud_config');
+                updateCloudStatus('hidden');
+                closeCloudModal();
+            }
+        }
+
+        function updateCloudStatus(status) {
+            const badge = document.getElementById('cloud-badge');
+            const wrapper = document.getElementById('cloud-status');
+            const dot = document.getElementById('cloud-dot');
+            const text = document.getElementById('cloud-text');
+
+            if(status === 'hidden') {
+                wrapper.classList.add('hidden');
+                wrapper.classList.remove('flex');
+                badge.classList.remove('hidden'); // Show red badge on icon
+                return;
+            }
+
+            badge.classList.add('hidden');
+            wrapper.classList.remove('hidden');
+            wrapper.classList.add('flex');
+            
+            // Reset Classes
+            dot.className = 'status-dot';
+            
+            if(status === 'online') {
+                dot.classList.add('status-online');
+                text.innerText = "Synced";
+            } else if (status === 'syncing') {
+                dot.classList.add('status-syncing');
+                text.innerText = "Saving...";
+            } else {
+                dot.classList.add('status-offline');
+                text.innerText = "Error";
+            }
+        }
+
+        // --- THEME ---
+        function initTheme() {
+            const html = document.documentElement;
+            const icon = document.getElementById('theme-icon');
+            if(AppData.theme === 'dark') {
+                html.classList.add('dark'); icon.setAttribute('data-lucide', 'sun');
+            } else {
+                html.classList.remove('dark'); icon.setAttribute('data-lucide', 'moon');
+            }
+            lucide.createIcons();
+        }
+        function toggleTheme() {
+            AppData.theme = AppData.theme === 'dark' ? 'light' : 'dark';
+            saveData();
+            initTheme();
+        }
+
+        // --- CLOCK ---
+        function updateClock() {
+            const now = new Date();
+            document.getElementById('header-clock').innerText = now.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+            document.getElementById('header-date').innerText = now.toLocaleDateString(undefined, {weekday:'long', day:'numeric', month:'long'});
+            const h = now.getHours();
+            const greet = h < 12 ? 'Good Morning' : h < 18 ? 'Good Afternoon' : 'Good Evening';
+            document.getElementById('header-greeting').innerText = `${greet}, User.`;
+            // Reminders
+            const currentMin = `${now.getHours()}:${now.getMinutes() < 10 ? '0' : ''}${now.getMinutes()}`;
+            AppData.reminders.forEach(r => {
+                if(r.time === currentMin && !r.notified) {
+                    if(Notification.permission === "granted") new Notification("Reminder", {body: r.text});
+                    alert(`🔔 ${r.text}`); r.notified = true; saveData();
+                }
+            });
+        }
+        setInterval(updateClock, 1000);
+
+        // --- TIMER ---
+        let timerInterval, timeLeft = AppData.timer * 60, isRunning = false;
+        function updateTimerUI() {
+            const m = Math.floor(timeLeft / 60);
+            const s = timeLeft % 60;
+            document.getElementById('timer-display').innerText = `${m}:${s < 10 ? '0' : ''}${s}`;
+        }
+        function toggleTimer() {
+            const btnIcon = document.getElementById('play-icon');
+            if(isRunning) {
+                clearInterval(timerInterval); isRunning = false;
+                btnIcon.parentElement.innerHTML = `<i id="play-icon" data-lucide="play" class="w-6 h-6 ml-1 fill-current"></i>`;
+            } else {
+                isRunning = true;
+                btnIcon.parentElement.innerHTML = `<i id="play-icon" data-lucide="pause" class="w-6 h-6 fill-current"></i>`;
+                timerInterval = setInterval(() => {
+                    if(timeLeft > 0) { timeLeft--; updateTimerUI(); }
+                    else { resetTimer(); alert("Focus Complete!"); }
+                }, 1000);
+            }
+            lucide.createIcons();
+        }
+        function resetTimer() {
+            clearInterval(timerInterval); isRunning = false; timeLeft = AppData.timer * 60; updateTimerUI();
+            document.querySelector('#play-icon').parentElement.innerHTML = `<i id="play-icon" data-lucide="play" class="w-6 h-6 ml-1 fill-current"></i>`;
+            lucide.createIcons();
+        }
+        function editTimer() {
+            if(isRunning) return;
+            const val = prompt("Minutes:", AppData.timer);
+            if(val && !isNaN(val)) { AppData.timer = parseInt(val); resetTimer(); }
+        }
+
+        // --- TASKS ---
+        function renderTasks() {
+            const list = document.getElementById('task-list');
+            list.innerHTML = '';
+            if(AppData.tasks.length===0) list.innerHTML = '<div class="text-center opacity-50 text-sm mt-8 text-slate-500">No tasks.</div>';
+            AppData.tasks.forEach(t => {
+                const el = document.createElement('div');
+                el.className = `flex items-center justify-between p-3 rounded-lg mb-2 transition group bg-slate-50 hover:bg-slate-100 border border-slate-200 dark:bg-[#0f172a] dark:hover:bg-slate-800 dark:border-transparent`;
+                el.innerHTML = `
+                    <div class="flex items-center gap-3 cursor-pointer overflow-hidden" onclick="toggleTask(${t.id})">
+                        <div class="w-5 h-5 rounded border flex items-center justify-center transition ${t.completed ? 'bg-blue-600 border-blue-600' : 'border-slate-300 dark:border-slate-600'}">${t.completed ? '<i data-lucide="check" class="w-3 h-3 text-white"></i>' : ''}</div>
+                        <span class="text-sm truncate text-slate-700 dark:text-slate-300 ${t.completed ? 'line-through opacity-50' : ''}">${t.text}</span>
+                    </div>
+                    <button onclick="deleteTask(${t.id})" class="opacity-0 group-hover:opacity-100 opacity-60 hover:text-red-500 transition"><i data-lucide="trash-2" class="w-4 h-4"></i></button>`;
+                list.appendChild(el);
+            });
+            lucide.createIcons();
+        }
+        function addTask(e) { e.preventDefault(); const inp=document.getElementById('task-input'); if(!inp.value.trim()) return; AppData.tasks.push({id:Date.now(), text:inp.value, completed:false}); inp.value=''; saveData(); renderTasks(); }
+        function toggleTask(id) { AppData.tasks = AppData.tasks.map(t=>t.id===id?{...t,completed:!t.completed}:t); saveData(); renderTasks(); }
+        function deleteTask(id) { AppData.tasks = AppData.tasks.filter(t=>t.id!==id); saveData(); renderTasks(); }
+
+        // --- LINKS ---
+        function renderLinks() {
+            const grid = document.getElementById('links-grid'); grid.innerHTML = '';
+            AppData.links.forEach(l => {
+                const el = document.createElement('a'); el.href = l.url; el.target = "_blank";
+                el.className = `flex items-center gap-3 p-4 rounded-lg transition group relative border border-slate-200 shadow-sm hover:shadow-md bg-white hover:bg-slate-50 dark:bg-[#0f172a] dark:hover:bg-slate-800 dark:border-transparent dark:shadow-none`;
+                if(!l.color) l.color = 'bg-blue-500';
+                el.innerHTML = `<div class="w-2 h-2 rounded-full ${l.color} shadow-[0_0_8px_currentColor]"></div><span class="text-sm font-medium truncate text-slate-700 dark:text-slate-200">${l.name}</span><button onclick="deleteLink(event, ${l.id})" class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 hover:text-red-500 transition"><i data-lucide="x" class="w-3 h-3"></i></button>`;
+                grid.appendChild(el);
+            });
+            lucide.createIcons();
+        }
+        function addLinkPrompt() {
+            if(AppData.links.length>=8) return alert("Limit reached.");
+            const name = prompt("Name:"); if(!name) return; let url = prompt("URL:"); if(!url) return;
+            if(!url.startsWith('http')) url = 'https://' + url;
+            const colors = ['bg-blue-500','bg-red-500','bg-green-500','bg-purple-500','bg-orange-500','bg-teal-500'];
+            AppData.links.push({id:Date.now(), name, url, color:colors[AppData.links.length%colors.length]}); saveData(); renderLinks();
+        }
+        function deleteLink(e, id) { e.preventDefault(); e.stopPropagation(); if(confirm("Remove?")) { AppData.links=AppData.links.filter(l=>l.id!==id); saveData(); renderLinks(); }}
+
+        // --- REMINDERS ---
+        function renderReminders() {
+            const list = document.getElementById('reminder-list'); list.innerHTML = '';
+            if(AppData.reminders.length===0) list.innerHTML = '<div class="text-center opacity-50 text-sm mt-8 text-slate-500">No reminders.</div>';
+            AppData.reminders.sort((a,b)=>a.time.localeCompare(b.time)).forEach(r => {
+                const el = document.createElement('div');
+                el.className = `flex items-center justify-between p-3 rounded-lg mb-2 group bg-slate-50 dark:bg-[#0f172a]`;
+                el.innerHTML = `<div class="flex gap-3 items-center"><span class="font-mono text-blue-600 dark:text-blue-500 text-xs bg-blue-100 dark:bg-blue-500/10 px-2 py-1 rounded">${r.time}</span><span class="text-sm opacity-90 text-slate-700 dark:text-slate-300">${r.text}</span></div><button onclick="deleteReminder(${r.id})" class="opacity-0 group-hover:opacity-100 hover:text-red-500 transition"><i data-lucide="x" class="w-4 h-4"></i></button>`;
+                list.appendChild(el);
+            });
+            lucide.createIcons();
+        }
+        function addReminderPrompt() { const text=prompt("Text:"); if(!text) return; const time=prompt("Time (HH:MM):"); if(!time) return; AppData.reminders.push({id:Date.now(), text, time, notified:false}); saveData(); renderReminders(); }
+        function deleteReminder(id) { AppData.reminders=AppData.reminders.filter(r=>r.id!==id); saveData(); renderReminders(); }
+
+        // --- NOTES ---
+        const notes = document.getElementById('notes-area');
+        notes.addEventListener('input', e => { AppData.notes = e.target.value; saveData(); });
+
+        // --- INIT ---
+        refreshAllUI();
+        updateClock();
+        updateTimerUI();
+        
+        // Check Cloud
+        if(AppData.cloud.apiKey && AppData.cloud.binId) {
+            pullFromCloud();
+        } else {
+            updateCloudStatus('hidden');
+        }
+
+        // Import/Export
+        function exportData() { const blob=new Blob([JSON.stringify(AppData)], {type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='backup.json'; a.click(); }
+        function importData(inp) { const f=inp.files[0]; if(!f) return; const r=new FileReader(); r.onload=e=>{ try{ const d=JSON.parse(e.target.result); if(d.tasks) { AppData.tasks=d.tasks; AppData.links=d.links; AppData.reminders=d.reminders; AppData.notes=d.notes; AppData.theme=d.theme; saveData(); refreshAllUI(); } } catch(err){alert("Invalid file");} }; r.readAsText(f); }
+        if(Notification.permission!=="granted") Notification.requestPermission();
+    </script>
+</body>
+</html>
