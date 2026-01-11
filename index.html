@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cloud Dashboard</title>
+    <title>Google Drive Dashboard</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -104,7 +104,7 @@
         </div>
         
         <div class="flex gap-2">
-            <button onclick="openCloudModal()" class="header-btn group relative" title="Cloud Sync Settings">
+            <button onclick="openCloudModal()" class="header-btn group relative" title="Google Drive Sync">
                 <i id="cloud-icon" data-lucide="cloud" class="w-5 h-5 group-hover:text-blue-500 transition"></i>
                 <span id="cloud-badge" class="absolute top-0 right-0 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white dark:border-slate-800 hidden"></span>
             </button>
@@ -159,28 +159,24 @@
 
     <div id="cloud-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden flex items-center justify-center z-50 p-4">
         <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl shadow-2xl w-full max-w-md border border-slate-200 dark:border-slate-800">
-            <h2 class="text-xl font-bold mb-4 dark:text-white flex items-center gap-2"><i data-lucide="cloud" class="w-5 h-5 text-blue-500"></i> Cloud Sync Setup</h2>
+            <h2 class="text-xl font-bold mb-4 dark:text-white flex items-center gap-2"><i data-lucide="cloud" class="w-5 h-5 text-blue-500"></i> Google Drive Sync</h2>
             <p class="text-sm text-slate-500 mb-4 leading-relaxed">
-                To enable auto-save across devices, create a free bin at <a href="https://jsonbin.io" target="_blank" class="text-blue-500 hover:underline">jsonbin.io</a>.
+                Connect your dashboard to a Google Apps Script.
             </p>
             
             <div class="space-y-4">
                 <div>
-                    <label class="block text-xs font-bold uppercase text-slate-400 mb-1">Master Key (X-Master-Key)</label>
-                    <input type="password" id="cloud-api-key" placeholder="Paste your API Key here" class="input-field">
-                </div>
-                <div>
-                    <label class="block text-xs font-bold uppercase text-slate-400 mb-1">Bin ID</label>
-                    <input type="text" id="cloud-bin-id" placeholder="Paste your Bin ID here" class="input-field">
+                    <label class="block text-xs font-bold uppercase text-slate-400 mb-1">Google Web App URL</label>
+                    <input type="text" id="cloud-url" placeholder="Paste your Script URL here (ends in /exec)" class="input-field">
                 </div>
             </div>
 
             <div class="flex justify-end gap-3 mt-6">
                 <button onclick="closeCloudModal()" class="px-4 py-2 text-sm text-slate-500 hover:text-slate-700 dark:hover:text-slate-300">Cancel</button>
-                <button onclick="saveCloudSettings()" class="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-500 shadow-lg shadow-blue-500/20">Connect & Sync</button>
+                <button onclick="saveCloudSettings()" class="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-500 shadow-lg shadow-blue-500/20">Connect</button>
             </div>
             
-            <button onclick="disconnectCloud()" class="w-full mt-4 text-xs text-red-400 hover:text-red-500 py-2 border-t border-slate-100 dark:border-slate-800">Disconnect / Clear Keys</button>
+            <button onclick="disconnectCloud()" class="w-full mt-4 text-xs text-red-400 hover:text-red-500 py-2 border-t border-slate-100 dark:border-slate-800">Disconnect</button>
         </div>
     </div>
 
@@ -198,7 +194,8 @@
             timer: 25,
             theme: localStorage.getItem('dash_theme') || 'dark',
             notes: localStorage.getItem('dash_notes') || '',
-            cloud: JSON.parse(localStorage.getItem('dash_cloud_config')) || { apiKey: '', binId: '' }
+            // Cloud Config now just stores the URL
+            cloud: JSON.parse(localStorage.getItem('dash_gdrive_config')) || { url: '' }
         };
 
         let syncTimeout;
@@ -213,71 +210,67 @@
             localStorage.setItem('dash_theme', AppData.theme);
 
             // 2. Cloud Save (Debounced)
-            if(AppData.cloud.apiKey && AppData.cloud.binId) {
+            if(AppData.cloud.url) {
                 updateCloudStatus('syncing');
                 clearTimeout(syncTimeout);
-                syncTimeout = setTimeout(pushToCloud, 2000); // Wait 2s after last type to save
+                syncTimeout = setTimeout(pushToCloud, 2000); // Wait 2s
             }
         }
 
-        // --- CLOUD FUNCTIONS ---
+        // --- CLOUD FUNCTIONS (Google Apps Script) ---
         async function pushToCloud() {
             try {
-                const res = await fetch(`https://api.jsonbin.io/v3/b/${AppData.cloud.binId}`, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-Master-Key': AppData.cloud.apiKey
-                    },
-                    body: JSON.stringify({ 
-                        tasks: AppData.tasks, 
-                        links: AppData.links, 
-                        reminders: AppData.reminders, 
-                        notes: AppData.notes,
-                        theme: AppData.theme 
-                    })
+                // Prepare data payload
+                const payload = JSON.stringify({ 
+                    tasks: AppData.tasks, 
+                    links: AppData.links, 
+                    reminders: AppData.reminders, 
+                    notes: AppData.notes,
+                    theme: AppData.theme 
                 });
 
-                if(res.ok) {
+                // Google Apps Script requires text/plain for CORS simplicity with POST
+                const res = await fetch(AppData.cloud.url, {
+                    method: 'POST',
+                    body: payload 
+                });
+
+                const result = await res.json();
+                
+                if(result.status === 'success') {
                     updateCloudStatus('online');
-                    console.log("Cloud Save Success");
+                    console.log("Drive Save Success");
                 } else {
-                    throw new Error("Save Failed");
+                    throw new Error(result.message || "Unknown Error");
                 }
             } catch(e) {
                 updateCloudStatus('offline');
-                alert("Cloud Save Failed. Check your keys.");
+                console.error("Cloud Save Failed:", e);
             }
         }
 
         async function pullFromCloud() {
-            if(!AppData.cloud.apiKey || !AppData.cloud.binId) return;
+            if(!AppData.cloud.url) return;
             
             updateCloudStatus('syncing');
             try {
-                const res = await fetch(`https://api.jsonbin.io/v3/b/${AppData.cloud.binId}`, {
-                    method: 'GET',
-                    headers: { 'X-Master-Key': AppData.cloud.apiKey }
-                });
+                // GET request to the Google Script
+                const res = await fetch(AppData.cloud.url);
+                const data = await res.json();
                 
-                if(res.ok) {
-                    const json = await res.json();
-                    const data = json.record;
-                    
-                    // Merge Data
-                    if(data.tasks) AppData.tasks = data.tasks;
-                    if(data.links) AppData.links = data.links;
-                    if(data.reminders) AppData.reminders = data.reminders;
-                    if(data.notes) AppData.notes = data.notes;
-                    if(data.theme) AppData.theme = data.theme;
-                    
-                    // Update UI
-                    refreshAllUI();
-                    updateCloudStatus('online');
-                }
+                // Merge Data if it exists
+                if(data.tasks) AppData.tasks = data.tasks;
+                if(data.links) AppData.links = data.links;
+                if(data.reminders) AppData.reminders = data.reminders;
+                if(data.notes) AppData.notes = data.notes;
+                if(data.theme) AppData.theme = data.theme;
+                
+                // Update UI
+                refreshAllUI();
+                updateCloudStatus('online');
             } catch(e) {
                 updateCloudStatus('offline');
-                console.error(e);
+                console.error("Cloud Pull Failed:", e);
             }
         }
 
@@ -293,29 +286,27 @@
         // --- CLOUD MODAL LOGIC ---
         function openCloudModal() {
             document.getElementById('cloud-modal').classList.remove('hidden');
-            document.getElementById('cloud-api-key').value = AppData.cloud.apiKey;
-            document.getElementById('cloud-bin-id').value = AppData.cloud.binId;
+            document.getElementById('cloud-url').value = AppData.cloud.url;
         }
         function closeCloudModal() {
             document.getElementById('cloud-modal').classList.add('hidden');
         }
         function saveCloudSettings() {
-            const key = document.getElementById('cloud-api-key').value.trim();
-            const bin = document.getElementById('cloud-bin-id').value.trim();
+            const url = document.getElementById('cloud-url').value.trim();
             
-            if(key && bin) {
-                AppData.cloud = { apiKey: key, binId: bin };
-                localStorage.setItem('dash_cloud_config', JSON.stringify(AppData.cloud));
+            if(url && url.includes('script.google.com')) {
+                AppData.cloud = { url: url };
+                localStorage.setItem('dash_gdrive_config', JSON.stringify(AppData.cloud));
                 closeCloudModal();
                 pullFromCloud(); // Initial Sync
             } else {
-                alert("Please enter both keys.");
+                alert("Please enter a valid Google Apps Script URL.");
             }
         }
         function disconnectCloud() {
-            if(confirm("Disconnect cloud? Local data will remain.")) {
-                AppData.cloud = { apiKey: '', binId: '' };
-                localStorage.removeItem('dash_cloud_config');
+            if(confirm("Disconnect Drive? Local data will remain.")) {
+                AppData.cloud = { url: '' };
+                localStorage.removeItem('dash_gdrive_config');
                 updateCloudStatus('hidden');
                 closeCloudModal();
             }
@@ -330,20 +321,18 @@
             if(status === 'hidden') {
                 wrapper.classList.add('hidden');
                 wrapper.classList.remove('flex');
-                badge.classList.remove('hidden'); // Show red badge on icon
+                badge.classList.remove('hidden'); 
                 return;
             }
 
             badge.classList.add('hidden');
             wrapper.classList.remove('hidden');
             wrapper.classList.add('flex');
-            
-            // Reset Classes
             dot.className = 'status-dot';
             
             if(status === 'online') {
                 dot.classList.add('status-online');
-                text.innerText = "Synced";
+                text.innerText = "Drive Synced";
             } else if (status === 'syncing') {
                 dot.classList.add('status-syncing');
                 text.innerText = "Saving...";
@@ -490,7 +479,7 @@
         updateTimerUI();
         
         // Check Cloud
-        if(AppData.cloud.apiKey && AppData.cloud.binId) {
+        if(AppData.cloud.url) {
             pullFromCloud();
         } else {
             updateCloudStatus('hidden');
