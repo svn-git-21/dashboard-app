@@ -3,8 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Google Drive Dashboard</title>
+    <title>Dashboard Pro</title>
     
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Lora:wght@400;600&family=JetBrains+Mono:wght@400;600&family=Comic+Neue:wght@400;700&family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -12,10 +14,10 @@
             theme: {
                 extend: {
                     colors: {
-                        slate: { 850: '#1e293b', 900: '#0f172a' }
+                        slate: { 850: '#1e293b', 900: '#0f172a' },
+                        primary: { 50: '#eff6ff', 100: '#dbeafe', 500: '#3b82f6', 600: '#2563eb' }
                     },
-                    fontFamily: { sans: ['Inter', 'sans-serif'] },
-                    animation: { 'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite' }
+                    fontFamily: { sans: ['var(--font-family)', 'sans-serif'] },
                 }
             }
         }
@@ -24,471 +26,891 @@
     <script src="https://unpkg.com/lucide@latest"></script>
 
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-        body { font-family: 'Inter', sans-serif; transition: background-color 0.3s, color 0.3s; }
+        /* --- DYNAMIC THEME VARIABLES --- */
+        :root {
+            --bg-body: #fffbf0; 
+            --bg-card: #ffffff;
+            --text-main: #0f172a;
+            --primary-50: #eff6ff;
+            --primary-100: #dbeafe;
+            --primary-500: #3b82f6;
+            --primary-600: #2563eb;
+            --font-family: 'Inter';
+            --html-font-size: 16px;
+            --font-weight-mod: 400;
+            --font-style-mod: normal;
+            --text-decoration-mod: none;
+            --quote-font-size: 14px;
+            --card-height: 340px; 
+            --grid-max-width: 1300px; 
+        }
+
+        html.dark {
+            --bg-body: #0f172a;
+            --bg-card: #1e293b;
+            --text-main: #ffffff;
+        }
+
+        html { font-size: var(--html-font-size); }
+        body { 
+            font-family: var(--font-family), sans-serif; 
+            background-color: var(--bg-body); 
+            color: var(--text-main);
+            font-weight: var(--font-weight-mod);
+            font-style: var(--font-style-mod);
+            text-decoration: var(--text-decoration-mod);
+            transition: background-color 0.3s, color 0.3s, font-size 0.2s; 
+        }
+
+        /* --- LAYOUT CONTROL --- */
+        .dynamic-width { max-width: var(--grid-max-width); width: 100%; transition: max-width 0.3s ease; }
+        .dashboard-grid { 
+            display: grid; 
+            grid-template-columns: repeat(3, 1fr); 
+            grid-template-rows: repeat(2, var(--card-height)); 
+            gap: 1.5rem; 
+            transition: grid-template-rows 0.3s ease;
+        }
         
-        .dashboard-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            grid-template-rows: repeat(2, 300px);
-            gap: 1.5rem;
-            max-width: 1200px;
-            width: 100%;
+        .card { 
+            background-color: var(--bg-card); 
+            color: var(--text-main);
+            border: 1px solid rgba(148, 163, 184, 0.1); 
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1); 
+            border-radius: 1rem; 
+            padding: 1.25rem; 
+            display: flex; flex-direction: column; overflow: hidden; 
+            transition: all 0.3s ease; position: relative; height: 100%; 
         }
-        
-        /* Card Styling */
-        .card {
-            background-color: #ffffff;
-            border: 1px solid #e2e8f0;
-            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
-            border-radius: 1rem;
-            padding: 1.5rem;
-            display: flex; flex-direction: column; overflow: hidden;
-            transition: all 0.3s ease;
-        }
-        .dark .card {
-            background-color: #1e293b;
-            border-color: rgba(255, 255, 255, 0.05);
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
-        }
+        .dark .card { border-color: rgba(255, 255, 255, 0.05); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2); }
 
-        /* Input Styling */
-        .input-field {
-            width: 100%; border-radius: 0.5rem; padding: 0.75rem 1rem; font-size: 0.875rem; outline: none; transition: all 0.2s;
-            background-color: #ffffff; border: 1px solid #cbd5e1; color: #0f172a;
-        }
-        .input-field:focus { border-color: #3b82f6; ring: 2px solid #3b82f6; }
-        .dark .input-field { background-color: #0f172a; border-color: rgba(255,255,255,0.05); color: white; }
-        .dark .input-field::placeholder { color: #475569; }
+        .header-btn { width: 2.75rem; height: 2.75rem; border-radius: 0.75rem; transition: all 0.2s; background-color: rgba(255,255,255,0.1); border: 1px solid rgba(148, 163, 184, 0.2); color: inherit; display: flex; align-items: center; justify-content: center; cursor: pointer; backdrop-filter: blur(4px); }
+        .header-btn:hover { border-color: var(--primary-500); color: var(--primary-500); transform: translateY(-1px); }
 
-        /* Header Button */
-        .header-btn {
-            padding: 0.75rem; border-radius: 0.75rem; transition: all 0.2s;
-            background-color: #ffffff; border: 1px solid #e2e8f0; color: #475569; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-        }
-        .header-btn:hover { background-color: #f8fafc; color: #0f172a; }
-        .dark .header-btn { background-color: #1e293b; border-color: rgba(255,255,255,0.05); color: #94a3b8; box-shadow: none; }
-        .dark .header-btn:hover { background-color: #334155; color: white; }
+        .card-header-group { display: flex; align-items: center; gap: 0.5rem; padding-right: 8px; border-radius: 6px; transition: background-color 0.2s; }
+        .card-edit-btn { opacity: 0; transition: opacity 0.2s, background-color 0.2s; padding: 4px; border-radius: 6px; color: inherit; cursor: pointer; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; }
+        .card-header-group:hover .card-edit-btn { opacity: 1; background-color: rgba(148, 163, 184, 0.1); }
+        .card-edit-btn:hover { background-color: var(--primary-500) !important; color: white !important; }
 
-        /* Status Dot */
-        .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
-        .status-online { background-color: #22c55e; box-shadow: 0 0 8px #22c55e; }
-        .status-offline { background-color: #94a3b8; }
-        .status-syncing { background-color: #eab308; animation: pulse 1s infinite; }
+        .input-field { width: 100%; border-radius: 0.5rem; padding: 0.6rem 0.8rem; font-size: 0.875rem; outline: none; transition: all 0.2s; background-color: rgba(148, 163, 184, 0.1); border: 1px solid transparent; color: inherit; }
+        .input-field:focus { border-color: var(--primary-500); ring: 2px solid var(--primary-500); background: rgba(255,255,255,0.8); color:black; }
+        .dark .input-field:focus { background: #0f172a; color: white; }
+
+        .color-input { -webkit-appearance: none; border: none; width: 100%; height: 36px; border-radius: 8px; cursor: pointer; padding: 0; overflow: hidden; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+        .color-input::-webkit-color-swatch-wrapper { padding: 0; }
+        .color-input::-webkit-color-swatch { border: none; }
 
         .scroller { overflow-y: auto; padding-right: 4px; }
-        .scroller::-webkit-scrollbar { width: 4px; }
-        .scroller::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-        .dark .scroller::-webkit-scrollbar-thumb { background: #334155; }
+        .scroller::-webkit-scrollbar { width: 4px; height: 4px; }
+        .scroller::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.3); border-radius: 4px; }
         .scroller::-webkit-scrollbar-track { background: transparent; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-        @media (max-width: 1024px) { .dashboard-grid { grid-template-columns: repeat(2, 1fr); grid-template-rows: auto; } .card { min-height: 300px; } }
-        @media (max-width: 640px) { .dashboard-grid { grid-template-columns: 1fr; } }
+        /* --- SCIENTIFIC CALCULATOR STYLES --- */
+        .sci-calc-grid { 
+            display: grid; 
+            grid-template-columns: repeat(7, 1fr); 
+            gap: 8px; 
+            padding: 4px;
+        }
+        .sci-btn { 
+            aspect-ratio: 1.4;
+            border-radius: 9999px; /* Pill shape */
+            font-size: 0.9rem; 
+            font-weight: 500;
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            border: none; 
+            outline: none; 
+            cursor: pointer; 
+            transition: all 0.1s;
+            background-color: rgba(148, 163, 184, 0.1);
+            color: inherit;
+        }
+        .sci-btn:hover { filter: brightness(1.2); }
+        .sci-btn:active { transform: scale(0.95); }
+        
+        .sci-btn.dark-btn { background-color: rgba(30, 41, 59, 0.8); } 
+        .dark .sci-btn.dark-btn { background-color: rgba(30, 41, 59, 1); }
+        
+        .sci-btn.accent-btn { background-color: rgba(59, 130, 246, 0.15); color: var(--primary-500); }
+        .sci-btn.eval-btn { background-color: var(--primary-600); color: white; }
+        
+        .calc-display-sci { 
+            width: 100%; 
+            padding: 30px 20px; 
+            font-size: 2.5rem; 
+            text-align: right; 
+            background: transparent; 
+            border: none; 
+            outline: none; 
+            color: inherit;
+            font-family: 'Inter', sans-serif;
+            font-weight: 300;
+        }
+        
+        /* --- SUBNET & CONVERTER --- */
+        .tool-label { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; opacity: 0.7; margin-bottom: 4px; display: block; }
+        .tool-result-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid rgba(148, 163, 184, 0.1); font-size: 0.9rem; }
+        .tool-result-row:last-child { border-bottom: none; }
+        .copy-btn { padding: 4px; border-radius: 4px; opacity: 0.5; transition: 0.2s; cursor: pointer; }
+        .copy-btn:hover { opacity: 1; background-color: rgba(148, 163, 184, 0.1); color: var(--primary-500); }
+        
+        /* --- CONVERTER TABS --- */
+        .conv-tab-container { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 10px; margin-bottom: 10px; }
+        .conv-tab { flex: 0 0 auto; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 80px; padding: 10px; border-radius: 10px; background: rgba(148,163,184,0.05); cursor: pointer; transition: all 0.2s; border: 1px solid transparent; }
+        .conv-tab:hover { background: rgba(148,163,184,0.1); }
+        .conv-tab.active { background: var(--primary-500); color: white; border-color: var(--primary-600); box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.4); }
+        .conv-tab i { margin-bottom: 4px; }
+        .conv-tab span { font-size: 0.7rem; font-weight: 600; }
+
+        /* --- SCROLLBAR HIDDEN FOR TIMER --- */
+        .duration-scroll-container { width: 100%; overflow-x: auto; white-space: nowrap; padding: 10px 0; margin-bottom: 20px; scrollbar-width: none; -ms-overflow-style: none; }
+        .duration-scroll-container::-webkit-scrollbar { display: none; }
+        .timer-pill { display: inline-block; padding: 6px 14px; margin-right: 8px; background-color: rgba(148, 163, 184, 0.1); color: inherit; border: 1px solid transparent; border-radius: 20px; cursor: pointer; font-size: 0.75rem; font-weight: 600; transition: all 0.2s; }
+        .timer-pill:hover { background-color: rgba(148, 163, 184, 0.2); }
+        .timer-pill.active { background-color: var(--primary-500); color: white; }
+
+        .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); grid-template-rows: repeat(6, 1fr); gap: 4px; flex: 1; }
+        .cal-cell { border-radius: 6px; font-size: 0.75rem; font-weight: 500; display: flex; align-items: center; justify-content: center; flex-direction: column; cursor: pointer; position: relative; transition: all 0.1s; user-select: none; border: 1px solid transparent; height: 100%; width: 100%; color: inherit; }
+        .cal-cell:hover { filter: brightness(0.9); background-color: rgba(148, 163, 184, 0.1); }
+        .cal-cell.today { border-color: var(--primary-500); font-weight: 700; color: var(--primary-500); }
+        .holiday-dot { width: 4px; height: 4px; background-color: #ef4444; border-radius: 50%; position: absolute; bottom: 2px; }
+
+        .dropdown-menu { position: absolute; top: 100%; right: 0; margin-top: 0.5rem; background: var(--bg-card); border: 1px solid rgba(148, 163, 184, 0.2); border-radius: 0.75rem; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); width: 220px; z-index: 50; padding: 0.5rem; display: none; flex-direction: column; gap: 0.25rem; }
+        .dropdown-menu.show { display: flex; }
+        .dropdown-item { display: flex; items-center; justify-content: space-between; padding: 0.6rem 0.75rem; font-size: 0.8rem; font-weight: 500; color: var(--text-main); border-radius: 0.5rem; transition: all 0.2s; text-align: left; width: 100%; cursor: pointer; opacity: 0.8; }
+        .dropdown-item:hover { background: rgba(148, 163, 184, 0.1); opacity: 1; color: var(--primary-500); }
+        .dropdown-divider { height: 1px; background: rgba(148, 163, 184, 0.2); margin: 4px 0; }
+        .style-btn { padding: 0.5rem; border-radius: 0.5rem; border: 1px solid rgba(148,163,184,0.3); color: var(--text-main); background: transparent; transition: all 0.2s; }
+        .style-btn.active { background: var(--primary-500); color: white; border-color: var(--primary-500); }
+        #footer-quote { font-size: var(--quote-font-size); transition: font-size 0.2s; }
+        #footer-author { font-size: calc(var(--quote-font-size) * 0.75); transition: font-size 0.2s; }
+        #toast { position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%) translateY(100px); background: var(--bg-card); color: var(--text-main); padding: 0.75rem 1.5rem; border-radius: 2rem; font-size: 0.875rem; font-weight: 500; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3); border: 1px solid rgba(148, 163, 184, 0.2); transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); opacity: 0; pointer-events: none; z-index: 100; }
+        #toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+        @media (max-width: 1024px) { 
+            .dashboard-grid { grid-template-columns: repeat(2, 1fr); grid-template-rows: auto; } 
+            .card { min-height: var(--card-height); } 
+        }
+        @media (max-width: 640px) { .dashboard-grid { grid-template-columns: 1fr; } .header-row { flex-direction: column; align-items: flex-start; gap: 1rem; } }
     </style>
 </head>
-<body class="min-h-screen flex flex-col items-center justify-center p-6 bg-slate-50 text-slate-900 dark:bg-[#0f172a] dark:text-white">
+<body class="min-h-screen flex flex-col items-center p-4 md:p-6 pb-12" onclick="closeDropdowns(event)">
 
-    <div class="w-full max-w-[1200px] flex justify-between items-start mb-8 px-2 mt-4">
-        <div class="mt-2"> 
-            <div class="flex items-center gap-3 mb-2">
-                <h1 id="header-clock" class="text-6xl font-light tracking-tight text-slate-800 dark:text-white">00:00</h1>
+    <div class="dynamic-width flex flex-wrap justify-between items-start mb-6 mt-2 header-row gap-4">
+        
+        <div class="flex-shrink-0"> 
+            <h1 id="header-clock" class="text-6xl font-light tracking-tight leading-none mb-1 opacity-90" style="font-weight: inherit;">00:00</h1>
+            <div class="flex items-center gap-3">
+                <h2 id="header-greeting" class="text-xl font-medium opacity-80">Good Day, User.</h2>
             </div>
-            <h2 id="header-greeting" class="text-xl font-medium text-slate-600 dark:text-slate-200">Good Evening, User.</h2>
-            <div class="flex items-center gap-2 mt-1">
-                <p id="header-date" class="text-sm text-slate-400 dark:text-slate-500">Loading...</p>
-                <div id="cloud-status" class="hidden items-center gap-1.5 px-2 py-0.5 rounded-full bg-slate-200 dark:bg-slate-800 text-[10px] font-bold uppercase tracking-wider text-slate-500">
-                    <span id="cloud-dot" class="status-dot status-offline"></span>
-                    <span id="cloud-text">Offline</span>
+            <div class="flex items-center gap-4 mt-2">
+                <p id="header-date" class="text-sm opacity-60">Loading...</p>
+                <div id="weather-widget" class="hidden items-center gap-2 px-2 py-0.5 rounded bg-card border border-slate-200 dark:border-slate-700">
+                    <i id="weather-icon" data-lucide="cloud" class="w-4 h-4 text-primary-500"></i>
+                    <span id="weather-temp" class="text-xs font-bold text-inherit">--°</span>
                 </div>
             </div>
         </div>
         
-        <div class="flex gap-2">
-            <button onclick="openCloudModal()" class="header-btn group relative" title="Google Drive Sync">
-                <i id="cloud-icon" data-lucide="cloud" class="w-5 h-5 group-hover:text-blue-500 transition"></i>
-                <span id="cloud-badge" class="absolute top-0 right-0 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white dark:border-slate-800 hidden"></span>
-            </button>
+        <div class="flex flex-col items-end gap-2 mt-4 relative">
+            <div class="flex gap-2 items-center">
+                <button onclick="toggleClipboardModal()" class="header-btn" title="Clipboard"><i data-lucide="clipboard" class="w-5 h-5 text-primary-500"></i></button>
+                <button onclick="uploadToDrive()" class="header-btn" title="Upload to Drive"><i data-lucide="cloud-upload" class="w-5 h-5 text-primary-500"></i></button>
+                <button onclick="downloadFromDrive()" class="header-btn" title="Download from Drive"><i data-lucide="refresh-cw" class="w-5 h-5 text-primary-500"></i></button>
+                <button onclick="toggleTheme()" class="header-btn" title="Toggle Theme"><i id="theme-icon" data-lucide="sun" class="w-5 h-5 text-primary-500"></i></button>
+                
+                <div class="w-px h-10 bg-slate-300 dark:bg-slate-700 mx-1 hidden md:block"></div>
+                
+                <div class="relative">
+                    <button onclick="toggleAppsMenu(event)" class="header-btn" title="Applications"><i data-lucide="layout-grid" class="w-5 h-5 text-primary-500"></i></button>
+                    <div id="apps-menu" class="dropdown-menu">
+                        <button onclick="openCalcModal()" class="dropdown-item"><div class="flex items-center gap-2"><i data-lucide="calculator" class="w-4 h-4"></i> Calculator</div></button>
+                        <button onclick="openSubnetModal()" class="dropdown-item"><div class="flex items-center gap-2"><i data-lucide="network" class="w-4 h-4"></i> Subnet</div></button>
+                        <button onclick="openConverterModal()" class="dropdown-item"><div class="flex items-center gap-2"><i data-lucide="arrow-right-left" class="w-4 h-4"></i> Converter</div></button>
+                    </div>
+                </div>
 
-            <div class="w-px h-10 bg-slate-200 dark:bg-slate-700 mx-1 self-center"></div>
-
-            <button onclick="toggleTheme()" class="header-btn" title="Toggle Theme"><i id="theme-icon" data-lucide="sun" class="w-5 h-5"></i></button>
-            <button onclick="exportData()" class="header-btn" title="Export"><i data-lucide="download" class="w-5 h-5"></i></button>
-            <button onclick="document.getElementById('file-input').click()" class="header-btn" title="Import"><i data-lucide="upload" class="w-5 h-5"></i></button>
+                <div class="relative">
+                    <button onclick="toggleSettingsMenu(event)" class="header-btn" title="Settings"><i data-lucide="settings" class="w-5 h-5 opacity-70"></i></button>
+                    <div id="settings-menu" class="dropdown-menu">
+                        <button onclick="openRosterModal()" class="dropdown-item"><div class="flex items-center gap-2"><i data-lucide="calendar-plus" class="w-4 h-4 text-primary-500"></i> <span class="font-bold text-primary-500">Update Roster</span></div></button>
+                        <div class="dropdown-divider"></div>
+                        <button onclick="openTimezoneModal()" class="dropdown-item"><div class="flex items-center gap-2"><i data-lucide="globe" class="w-4 h-4"></i> Timezone</div></button>
+                        <button onclick="openUICustomizer()" class="dropdown-item"><div class="flex items-center gap-2"><i data-lucide="palette" class="w-4 h-4"></i> Customize Look</div></button>
+                        <button onclick="openShiftSettingsModal()" class="dropdown-item"><div class="flex items-center gap-2"><i data-lucide="sliders" class="w-4 h-4"></i> Shift Colors</div></button>
+                        <div class="dropdown-divider"></div>
+                        <button onclick="openCloudModal()" class="dropdown-item"><div class="flex items-center gap-2"><i data-lucide="cloud" class="w-4 h-4"></i> Drive Config</div></button>
+                        <button onclick="exportData()" class="dropdown-item"><div class="flex items-center gap-2"><i data-lucide="download" class="w-4 h-4"></i> Export Data</div></button>
+                        <button onclick="document.getElementById('file-input').click()" class="dropdown-item"><div class="flex items-center gap-2"><i data-lucide="upload" class="w-4 h-4"></i> Import Data</div></button>
+                    </div>
+                </div>
+            </div>
+            <div id="cloud-status-btn" onclick="openCloudModal()" class="cursor-pointer flex items-center gap-1.5 px-3 py-1 rounded-full bg-card text-[10px] font-bold uppercase tracking-wider opacity-80 border border-slate-200 dark:border-slate-700 hover:opacity-100 transition shadow-sm">
+                <span id="cloud-dot" class="w-2 h-2 rounded-full bg-gray-400"></span><span id="cloud-text">Drive: Not Connected</span>
+            </div>
             <input type="file" id="file-input" class="hidden" accept=".json" onchange="importData(this)">
         </div>
     </div>
 
-    <div class="dashboard-grid">
-        <div class="card items-center justify-center">
-            <div class="flex items-center gap-2 mb-6 text-slate-400"><i data-lucide="clock" class="w-4 h-4"></i><span class="text-xs font-bold tracking-[0.15em] uppercase">Focus Mode</span></div>
-            <div class="mb-8 cursor-pointer group" onclick="editTimer()"><span id="timer-display" class="text-7xl font-medium tracking-wide text-slate-800 dark:text-white group-hover:text-blue-500 transition">25:00</span></div>
+    <div class="dashboard-grid dynamic-width">
+        <div id="card-calendar" class="card">
+            <div class="flex items-center justify-between mb-2">
+                <div class="card-header-group">
+                    <div class="flex items-center gap-2 opacity-60"><i data-lucide="calendar" class="w-4 h-4"></i><span class="text-xs font-bold tracking-widest uppercase">Calendar</span></div>
+                    <button class="card-edit-btn" onclick="openCardSettings('calendar')" title="Customize"><i data-lucide="palette" class="w-3 h-3"></i></button>
+                </div>
+                <div class="flex items-center gap-1">
+                    <button onclick="changeMonth(-1)" class="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded text-inherit"><i data-lucide="chevron-left" class="w-4 h-4"></i></button>
+                    <span id="cal-month-label" class="text-sm font-bold px-2 text-center select-none whitespace-nowrap text-inherit">...</span>
+                    <button onclick="changeMonth(1)" class="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded text-inherit"><i data-lucide="chevron-right" class="w-4 h-4"></i></button>
+                </div>
+            </div>
+            <div class="grid grid-cols-7 gap-1 mb-1 text-center">
+                <div class="text-xs font-bold opacity-50 uppercase">Su</div><div class="text-xs font-bold opacity-50 uppercase">Mo</div><div class="text-xs font-bold opacity-50 uppercase">Tu</div><div class="text-xs font-bold opacity-50 uppercase">We</div><div class="text-xs font-bold opacity-50 uppercase">Th</div><div class="text-xs font-bold opacity-50 uppercase">Fr</div><div class="text-xs font-bold opacity-50 uppercase">Sa</div>
+            </div>
+            <div id="calendar-grid" class="cal-grid"></div>
+            <div class="mt-2 flex items-center justify-between border-t border-slate-100 dark:border-slate-800 pt-2">
+                <div class="flex gap-2 overflow-x-auto text-xs opacity-60 whitespace-nowrap"><span><span class="text-red-500 font-bold">•</span> Holiday</span></div>
+                <span class="text-xs opacity-60">Tap date to cycle</span>
+            </div>
+        </div>
+
+        <div id="card-timer" class="card items-center justify-center">
+            <div class="absolute top-4 left-6 card-header-group">
+                <div class="flex items-center gap-2 opacity-60"><i data-lucide="clock" class="w-4 h-4"></i><span class="text-xs font-bold tracking-[0.15em] uppercase">Focus</span></div>
+                <button class="card-edit-btn" onclick="openCardSettings('timer')" title="Customize"><i data-lucide="palette" class="w-3 h-3"></i></button>
+            </div>
+            <div class="mb-4 mt-8 cursor-pointer group relative" onclick="openTimerModal()">
+                <span id="timer-display" class="text-7xl font-medium tracking-wide group-hover:text-primary-500 transition">25:00</span>
+            </div>
+            <div class="duration-scroll-container text-center px-4">
+                <div class="inline-flex">
+                    <button class="timer-pill" onclick="setTimer(5)">5m</button><button class="timer-pill" onclick="setTimer(10)">10m</button><button class="timer-pill" onclick="setTimer(15)">15m</button><button class="timer-pill" onclick="setTimer(20)">20m</button><button class="timer-pill" onclick="setTimer(25)">25m</button><button class="timer-pill" onclick="setTimer(30)">30m</button><button class="timer-pill" onclick="setTimer(45)">45m</button><button class="timer-pill" onclick="setTimer(60)">60m</button>
+                </div>
+            </div>
             <div class="flex gap-4">
-                <button onclick="toggleTimer()" class="w-14 h-14 rounded-full bg-blue-600 hover:bg-blue-500 flex items-center justify-center transition shadow-lg shadow-blue-500/30 text-white"><i id="play-icon" data-lucide="play" class="w-6 h-6 ml-1 fill-current"></i></button>
+                <button onclick="toggleTimer()" class="w-14 h-14 rounded-full bg-primary-600 hover:bg-primary-500 flex items-center justify-center transition shadow-lg shadow-primary-500/30 text-white"><i id="play-icon" data-lucide="play" class="w-6 h-6 ml-1 fill-current"></i></button>
                 <button onclick="resetTimer()" class="w-14 h-14 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 dark:bg-slate-700 dark:hover:bg-slate-600 dark:text-slate-300 flex items-center justify-center transition"><i data-lucide="rotate-ccw" class="w-6 h-6"></i></button>
             </div>
         </div>
 
-        <div class="card">
-            <div class="flex items-center gap-2 mb-4 text-slate-400"><i data-lucide="check-square" class="w-4 h-4"></i><span class="text-xs font-bold tracking-widest uppercase">Tasks</span></div>
+        <div id="card-tasks" class="card">
+            <div class="flex items-center gap-2 mb-4">
+                <div class="card-header-group">
+                    <div class="flex items-center gap-2 opacity-60"><i data-lucide="check-square" class="w-4 h-4"></i><span class="text-xs font-bold tracking-widest uppercase">Tasks</span></div>
+                    <button class="card-edit-btn" onclick="openCardSettings('tasks')" title="Customize"><i data-lucide="palette" class="w-3 h-3"></i></button>
+                </div>
+            </div>
             <form onsubmit="addTask(event)" class="flex gap-2 mb-4">
                 <input id="task-input" type="text" placeholder="Add task..." class="input-field">
-                <button type="submit" class="bg-blue-600 hover:bg-blue-500 text-white px-4 rounded-lg transition flex items-center justify-center shadow-sm"><i data-lucide="plus" class="w-5 h-5"></i></button>
+                <button type="submit" class="bg-primary-600 hover:bg-primary-500 text-white px-3 rounded-lg transition shadow-sm flex items-center justify-center"><i data-lucide="plus" class="w-5 h-5"></i></button>
             </form>
             <div id="task-list" class="scroller flex-1 space-y-2"></div>
         </div>
 
-        <div class="card">
-            <div class="flex items-center justify-between mb-4"><div class="flex items-center gap-2 text-slate-400"><i data-lucide="link" class="w-4 h-4"></i><span class="text-xs font-bold tracking-widest uppercase">Quick Links</span></div><button onclick="addLinkPrompt()" class="text-blue-500 hover:text-blue-400"><i data-lucide="plus" class="w-4 h-4"></i></button></div>
+        <div id="card-links" class="card">
+            <div class="flex items-center justify-between mb-4">
+                <div class="card-header-group">
+                    <div class="flex items-center gap-2 opacity-60"><i data-lucide="link" class="w-4 h-4"></i><span class="text-xs font-bold tracking-widest uppercase">Links</span></div>
+                    <button class="card-edit-btn" onclick="openCardSettings('links')" title="Customize"><i data-lucide="palette" class="w-3 h-3"></i></button>
+                </div>
+                <button onclick="openLinkModal()" class="text-primary-500 hover:text-primary-400"><i data-lucide="plus" class="w-4 h-4"></i></button>
+            </div>
             <div id="links-grid" class="grid grid-cols-2 gap-3 content-start h-full overflow-y-auto scroller"></div>
         </div>
 
-        <div class="card">
-            <div class="flex items-center gap-2 mb-3 text-slate-400"><i data-lucide="edit-3" class="w-4 h-4"></i><span class="text-xs font-bold tracking-widest uppercase">Notes</span></div>
-            <textarea id="notes-area" class="w-full h-full bg-transparent resize-none outline-none text-sm leading-relaxed placeholder-slate-400 text-slate-700 dark:text-slate-300" placeholder="Type something..."></textarea>
-        </div>
-
-        <div class="card">
-            <div class="flex items-center justify-between mb-4"><div class="flex items-center gap-2 text-slate-400"><i data-lucide="bell" class="w-4 h-4"></i><span class="text-xs font-bold tracking-widest uppercase">Reminders</span></div><button onclick="addReminderPrompt()" class="text-blue-500 hover:text-blue-400"><i data-lucide="plus" class="w-4 h-4"></i></button></div>
-            <div id="reminder-list" class="scroller flex-1 space-y-2"></div>
-        </div>
-
-        <div class="card items-center justify-center text-center bg-slate-50 dark:bg-slate-800/50">
-            <p class="text-slate-400 dark:text-slate-500 text-sm italic max-w-[200px]" id="quote-text">"Focus is the key to productivity."</p>
-        </div>
-    </div>
-
-    <div id="cloud-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden flex items-center justify-center z-50 p-4">
-        <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl shadow-2xl w-full max-w-md border border-slate-200 dark:border-slate-800">
-            <h2 class="text-xl font-bold mb-4 dark:text-white flex items-center gap-2"><i data-lucide="cloud" class="w-5 h-5 text-blue-500"></i> Google Drive Sync</h2>
-            <p class="text-sm text-slate-500 mb-4 leading-relaxed">
-                Connect your dashboard to a Google Apps Script.
-            </p>
-            
-            <div class="space-y-4">
-                <div>
-                    <label class="block text-xs font-bold uppercase text-slate-400 mb-1">Google Web App URL</label>
-                    <input type="text" id="cloud-url" placeholder="Paste your Script URL here (ends in /exec)" class="input-field">
+        <div id="card-notes" class="card">
+            <div class="flex items-center gap-2 mb-3">
+                <div class="card-header-group">
+                    <div class="flex items-center gap-2 opacity-60"><i data-lucide="edit-3" class="w-4 h-4"></i><span class="text-xs font-bold tracking-widest uppercase">Notes</span></div>
+                    <button class="card-edit-btn" onclick="openCardSettings('notes')" title="Customize"><i data-lucide="palette" class="w-3 h-3"></i></button>
                 </div>
             </div>
+            <textarea id="notes-area" class="w-full h-full bg-transparent resize-none outline-none text-sm leading-relaxed placeholder-slate-400 opacity-90 text-inherit" placeholder="Type something..."></textarea>
+        </div>
 
-            <div class="flex justify-end gap-3 mt-6">
-                <button onclick="closeCloudModal()" class="px-4 py-2 text-sm text-slate-500 hover:text-slate-700 dark:hover:text-slate-300">Cancel</button>
-                <button onclick="saveCloudSettings()" class="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-500 shadow-lg shadow-blue-500/20">Connect</button>
+        <div id="card-reminders" class="card">
+            <div class="flex items-center justify-between mb-4">
+                <div class="card-header-group">
+                    <div class="flex items-center gap-2 opacity-60"><i data-lucide="bell" class="w-4 h-4"></i><span class="text-xs font-bold tracking-widest uppercase">Reminders</span></div>
+                    <button class="card-edit-btn" onclick="openCardSettings('reminders')" title="Customize"><i data-lucide="palette" class="w-3 h-3"></i></button>
+                </div>
+                <button onclick="openReminderModal()" class="text-primary-500 hover:text-primary-400"><i data-lucide="plus" class="w-4 h-4"></i></button>
             </div>
-            
-            <button onclick="disconnectCloud()" class="w-full mt-4 text-xs text-red-400 hover:text-red-500 py-2 border-t border-slate-100 dark:border-slate-800">Disconnect</button>
+            <div id="reminder-list" class="scroller flex-1 space-y-2"></div>
         </div>
     </div>
 
+    <footer class="dynamic-width mt-8 text-center border-t border-slate-200 dark:border-slate-800 pt-6">
+        <p id="footer-quote" class="italic font-medium opacity-70 transition">"Believe you can and you're halfway there."</p>
+        <p id="footer-author" class="opacity-50 mt-1 uppercase tracking-wider font-bold">- Theodore Roosevelt</p>
+    </footer>
+
+    <div id="calc-modal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[80] p-4">
+        <div class="bg-card p-0 rounded-2xl shadow-2xl w-full max-w-4xl border border-slate-200 dark:border-slate-800 flex overflow-hidden h-[550px]">
+            <div class="flex-[2] p-6 flex flex-col border-r border-slate-200 dark:border-slate-700">
+                <div class="flex justify-between mb-0 items-center">
+                    <h3 class="text-lg font-bold"><i data-lucide="calculator" class="w-5 h-5 inline mr-1"></i></h3>
+                    <div class="flex items-center gap-2 text-xs font-bold uppercase tracking-wider">
+                         <span id="deg-indicator" class="text-primary-500">DEG</span>
+                    </div>
+                </div>
+                <input type="text" id="calc-screen" class="calc-display-sci" readonly value="0">
+                
+                <div class="sci-calc-grid flex-1">
+                    <button class="sci-btn accent-btn" onclick="toggleDeg()" id="btn-deg">Deg</button>
+                    <button class="sci-btn dark-btn" onclick="calcInput('pi')">π</button>
+                    <button class="sci-btn dark-btn" onclick="calcInput('e')">e</button>
+                    <button class="sci-btn dark-btn" onclick="calcInput('C')">AC</button>
+                    <button class="sci-btn dark-btn" onclick="calcInput('(')">(</button>
+                    <button class="sci-btn dark-btn" onclick="calcInput(')')">)</button>
+                    <button class="sci-btn dark-btn" onclick="calcInput('/')">÷</button>
+                    
+                    <button class="sci-btn dark-btn" onclick="calcInput('sin')">sin</button>
+                    <button class="sci-btn dark-btn" onclick="calcInput('cos')">cos</button>
+                    <button class="sci-btn dark-btn" onclick="calcInput('tan')">tan</button>
+                    <button class="sci-btn" onclick="calcInput('7')">7</button>
+                    <button class="sci-btn" onclick="calcInput('8')">8</button>
+                    <button class="sci-btn" onclick="calcInput('9')">9</button>
+                    <button class="sci-btn dark-btn" onclick="calcInput('*')">×</button>
+
+                    <button class="sci-btn dark-btn" onclick="calcInput('ln')">ln</button>
+                    <button class="sci-btn dark-btn" onclick="calcInput('log')">log</button>
+                    <button class="sci-btn dark-btn" onclick="calcInput('sq')">√</button>
+                    <button class="sci-btn" onclick="calcInput('4')">4</button>
+                    <button class="sci-btn" onclick="calcInput('5')">5</button>
+                    <button class="sci-btn" onclick="calcInput('6')">6</button>
+                    <button class="sci-btn dark-btn" onclick="calcInput('-')">-</button>
+
+                    <button class="sci-btn dark-btn" onclick="calcInput('pow')">xʸ</button>
+                    <button class="sci-btn dark-btn" onclick="calcInput('inv')">1/x</button>
+                    <button class="sci-btn dark-btn" onclick="calcInput('fact')">!</button>
+                    <button class="sci-btn" onclick="calcInput('1')">1</button>
+                    <button class="sci-btn" onclick="calcInput('2')">2</button>
+                    <button class="sci-btn" onclick="calcInput('3')">3</button>
+                    <button class="sci-btn dark-btn" onclick="calcInput('+')">+</button>
+
+                    <button class="sci-btn dark-btn" onclick="calcInput('ans')">Ans</button>
+                    <button class="sci-btn dark-btn" onclick="calcInput('exp')">EXP</button>
+                    <button class="sci-btn dark-btn" onclick="calcInput('%')">%</button>
+                    <button class="sci-btn" onclick="calcInput('0')">0</button>
+                    <button class="sci-btn" onclick="calcInput('.')">.</button>
+                    <button class="sci-btn dark-btn" onclick="calcInput('DEL')">⌫</button>
+                    <button class="sci-btn eval-btn" onclick="calcInput('=')">=</button>
+                </div>
+            </div>
+            <div class="flex-[0.8] bg-slate-50 dark:bg-slate-900 p-4 flex flex-col min-w-[200px]">
+                <div class="flex justify-between items-center mb-4">
+                    <span class="text-xs font-bold uppercase opacity-60">History</span>
+                    <button onclick="clearCalcHistory()" class="text-xs text-red-500 hover:underline">Clear</button>
+                </div>
+                <div id="calc-history-list" class="scroller flex-1 space-y-2 text-sm font-mono opacity-80"></div>
+                <button onclick="closeCalcModal()" class="mt-4 w-full py-2 bg-slate-200 dark:bg-slate-700 rounded-lg text-sm font-bold">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="subnet-modal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[80] p-4">
+        <div class="bg-card p-6 rounded-2xl shadow-2xl w-full max-w-lg border border-slate-200 dark:border-slate-800">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-lg font-bold flex items-center gap-2"><i data-lucide="network" class="w-5 h-5 text-primary-500"></i> IPv4 Subnet Calculator</h3>
+                <button onclick="document.getElementById('subnet-modal').classList.add('hidden')" class="opacity-60 hover:opacity-100"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <div class="flex gap-2 mb-6">
+                <div class="flex-1">
+                    <label class="tool-label">IP Address</label>
+                    <input type="text" id="subnet-ip" class="input-field" placeholder="192.168.1.1" value="192.168.1.1">
+                </div>
+                <div class="w-24">
+                    <label class="tool-label">CIDR</label>
+                    <input type="number" id="subnet-cidr" class="input-field" placeholder="24" value="24" min="1" max="32">
+                </div>
+                <button onclick="calculateSubnet()" class="self-end px-4 py-2.5 bg-primary-600 text-white rounded-lg font-bold">Calc</button>
+            </div>
+            <div id="subnet-results" class="bg-slate-50 dark:bg-slate-900 rounded-lg p-4 font-mono text-sm space-y-1">
+                <div class="opacity-50 text-center py-4">Enter IP & CIDR to see details</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="converter-modal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[80] p-4">
+        <div class="bg-card p-6 rounded-2xl shadow-2xl w-full max-w-md border border-slate-200 dark:border-slate-800">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold flex items-center gap-2"><i data-lucide="arrow-right-left" class="w-5 h-5 text-primary-500"></i> Unit Converter</h3>
+                <button onclick="document.getElementById('converter-modal').classList.add('hidden')" class="opacity-60 hover:opacity-100"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            
+            <div class="conv-tab-container no-scrollbar" id="conv-tabs">
+                </div>
+
+            <div class="grid grid-cols-2 gap-4 mb-4">
+                <div>
+                    <label class="tool-label">From</label>
+                    <input type="number" id="conv-from-val" class="input-field mb-2" value="1" oninput="convert()">
+                    <select id="conv-from-unit" class="input-field" onchange="convert()"></select>
+                </div>
+                <div>
+                    <label class="tool-label">To</label>
+                    <input type="number" id="conv-to-val" class="input-field mb-2" readonly>
+                    <select id="conv-to-unit" class="input-field" onchange="convert()"></select>
+                </div>
+            </div>
+            <div id="currency-disclaimer" class="hidden text-xs text-center opacity-50 mt-2 italic flex justify-center gap-2">
+                <span><i data-lucide="refresh-cw" class="w-3 h-3 inline animate-spin" id="rate-spinner" style="display:none"></i></span>
+                <span id="rate-msg">Rates via Frankfurter API (ECB)</span>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast">Action Complete</div>
+    <div id="card-settings-modal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[70] p-4"><div class="bg-card p-6 rounded-2xl shadow-2xl w-full max-w-sm border border-slate-200 dark:border-slate-800"><h3 class="text-lg font-bold mb-4 flex items-center gap-2"><i data-lucide="palette" class="w-5 h-5 text-primary-500"></i> Customize Card</h3><div class="space-y-4"><div><label class="block text-xs font-bold opacity-60 uppercase mb-1">Background Color</label><input type="color" id="card-bg-input" class="color-input"></div><div><label class="block text-xs font-bold opacity-60 uppercase mb-1">Text Color</label><input type="color" id="card-text-input" class="color-input"></div></div><div class="flex justify-between items-center mt-6 pt-4 border-t border-slate-200 dark:border-slate-700"><button onclick="resetCardStyle()" class="text-xs text-red-500 hover:underline">Reset Default</button><div class="flex gap-2"><button onclick="document.getElementById('card-settings-modal').classList.add('hidden')" class="px-3 py-2 text-sm opacity-60 hover:opacity-100">Cancel</button><button onclick="saveCardStyle()" class="px-4 py-2 text-sm bg-primary-600 text-white rounded-lg">Save</button></div></div></div></div>
+    <div id="ui-custom-modal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[60] p-4"><div class="bg-card p-6 rounded-2xl shadow-2xl w-full max-w-sm border border-slate-200 dark:border-slate-800"><h3 class="text-lg font-bold mb-4 flex items-center gap-2"><i data-lucide="palette" class="w-5 h-5 text-primary-500"></i> Global Look</h3><div class="space-y-4 max-h-[60vh] overflow-y-auto scroller pr-2"><div><label class="block text-xs font-bold opacity-60 uppercase mb-2">Quote Size: <span id="quote-size-val">14px</span></label><input type="range" id="ui-quote-size" min="10" max="30" value="14" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700"></div><div><label class="block text-xs font-bold opacity-60 uppercase mb-2">Dashboard Width: <span id="grid-width-val">1300px</span></label><input type="range" id="ui-grid-width" min="800" max="1800" value="1300" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700"></div><div><label class="block text-xs font-bold opacity-60 uppercase mb-2">Card Height: <span id="card-height-val">340px</span></label><input type="range" id="ui-card-height" min="250" max="600" value="340" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700"></div><div><label class="block text-xs font-bold opacity-60 uppercase mb-2">Font Style</label><select id="ui-font-family" class="input-field"><option value="Inter">Modern Sans (Default)</option><option value="Poppins">Geometric (Poppins)</option><option value="Lora">Classic Serif (Lora)</option><option value="JetBrains Mono">Monospace (Code)</option><option value="Comic Neue">Playful (Comic)</option></select></div><div><label class="block text-xs font-bold opacity-60 uppercase mb-2">Base Font Size: <span id="font-size-val">16px</span></label><input type="range" id="ui-font-size" min="12" max="24" value="16" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700"></div><div class="flex justify-between gap-2"><button id="btn-bold" class="style-btn flex-1 font-bold" onclick="toggleFontStyle('bold')">B</button><button id="btn-italic" class="style-btn flex-1 italic" onclick="toggleFontStyle('italic')">I</button><button id="btn-underline" class="style-btn flex-1 underline" onclick="toggleFontStyle('underline')">U</button></div><div class="h-px bg-slate-200 dark:bg-slate-700 my-2"></div><div><label class="block text-xs font-bold opacity-60 uppercase mb-1">Page Background</label><input type="color" id="ui-bg-color" class="color-input"></div><div><label class="block text-xs font-bold opacity-60 uppercase mb-1">Default Card Color</label><input type="color" id="ui-card-color" class="color-input"></div><div><label class="block text-xs font-bold opacity-60 uppercase mb-1">Default Text Color</label><input type="color" id="ui-text-color" class="color-input"></div><div><label class="block text-xs font-bold opacity-60 uppercase mb-1">Primary Accent</label><input type="color" id="ui-primary-color" class="color-input"></div></div><div class="flex justify-between items-center mt-6 pt-4 border-t border-slate-200 dark:border-slate-700"><button onclick="resetUICustomization()" class="text-xs text-red-500 hover:underline">Reset Defaults</button><button onclick="document.getElementById('ui-custom-modal').classList.add('hidden')" class="px-4 py-2 text-sm bg-slate-100 dark:bg-slate-700 rounded-lg">Done</button></div></div></div>
+    <div id="timezone-modal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[60] p-4"><div class="bg-card p-6 rounded-2xl shadow-2xl w-full max-w-sm border border-slate-200 dark:border-slate-800"><h3 class="text-lg font-bold mb-4 flex items-center gap-2"><i data-lucide="globe" class="w-5 h-5 text-primary-500"></i> Select Timezone</h3><select id="timezone-select" class="input-field mb-6"><option value="local">📍 Local System Time</option><option value="UTC">UTC</option><option value="America/New_York">New York</option><option value="America/Chicago">Chicago</option><option value="America/Los_Angeles">Los Angeles</option><option value="Europe/London">London</option><option value="Asia/Kolkata">India</option></select><div class="flex justify-end gap-3"><button onclick="document.getElementById('timezone-modal').classList.add('hidden')" class="px-4 py-2 text-sm opacity-60">Cancel</button><button onclick="saveTimezone()" class="px-4 py-2 text-sm bg-primary-600 text-white rounded-lg">Save</button></div></div></div>
+    <div id="shift-settings-modal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[60] p-4"><div class="bg-card p-6 rounded-2xl shadow-2xl w-full max-w-sm border border-slate-200 dark:border-slate-800"><h3 class="text-lg font-bold mb-4 flex items-center gap-2"><i data-lucide="settings-2" class="w-5 h-5 text-primary-500"></i> Shift Color Settings</h3><div class="space-y-4"><div><label class="block text-xs font-bold opacity-60 uppercase mb-1">General (G)</label><input type="color" id="color-general" class="color-input"></div><div><label class="block text-xs font-bold opacity-60 uppercase mb-1">Morning (M)</label><input type="color" id="color-morning" class="color-input"></div><div><label class="block text-xs font-bold opacity-60 uppercase mb-1">Afternoon (A)</label><input type="color" id="color-afternoon" class="color-input"></div><div><label class="block text-xs font-bold opacity-60 uppercase mb-1">Night (N)</label><input type="color" id="color-night" class="color-input"></div></div><div class="flex justify-end gap-3 mt-6"><button onclick="document.getElementById('shift-settings-modal').classList.add('hidden')" class="px-4 py-2 text-sm opacity-60">Cancel</button><button onclick="saveShiftSettings()" class="px-4 py-2 text-sm bg-primary-600 text-white rounded-lg">Save Colors</button></div></div></div>
+    <div id="input-modal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[60] p-4 transition-opacity"><div class="bg-card p-6 rounded-2xl shadow-2xl w-full max-w-sm border border-slate-200 dark:border-slate-800 transform transition-all scale-95" id="input-modal-content"><h3 id="input-modal-title" class="text-lg font-bold mb-4">Input</h3><div id="input-modal-body" class="space-y-3"></div><div class="flex justify-end gap-3 mt-6"><button onclick="closeInputModal()" class="px-4 py-2 text-sm opacity-60 hover:opacity-100 rounded-lg">Cancel</button><button id="input-modal-save" class="px-4 py-2 text-sm bg-primary-600 text-white rounded-lg">Save</button></div></div></div>
+    <div id="roster-modal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[60] p-4"><div class="bg-card p-6 rounded-2xl shadow-2xl w-full max-w-sm border border-slate-200 dark:border-slate-800"><h3 class="text-lg font-bold mb-4 flex items-center gap-2"><i data-lucide="calendar" class="w-5 h-5 text-primary-500"></i> Update Roster</h3><div class="space-y-4"><div><label class="block text-xs font-bold opacity-60 uppercase mb-1">Select Date</label><input type="date" id="roster-date-input" class="input-field"></div><div><label class="block text-xs font-bold opacity-60 uppercase mb-1">Select Shift</label><select id="roster-shift-input" class="input-field appearance-none"><option value="off">Off</option><option value="morning">Morning</option><option value="afternoon">Afternoon</option><option value="night">Night</option><option value="general">General</option><option value="est">EST</option><option value="on-call">On-Call</option></select></div></div><div class="flex justify-end gap-3 mt-6"><button onclick="document.getElementById('roster-modal').classList.add('hidden')" class="px-4 py-2 text-sm opacity-60">Cancel</button><button onclick="saveRosterEntry()" class="px-4 py-2 text-sm bg-primary-600 text-white rounded-lg">Update</button></div></div></div>
+    <div id="clipboard-modal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"><div class="bg-card p-6 rounded-2xl shadow-2xl w-full max-w-lg border border-slate-200 dark:border-slate-800"><div class="flex justify-between items-center mb-4"><h2 class="text-lg font-bold flex items-center gap-2"><i data-lucide="clipboard" class="w-5 h-5 text-primary-500"></i> Clipboard</h2><button onclick="toggleClipboardModal()" class="opacity-60 hover:opacity-100"><i data-lucide="x" class="w-5 h-5"></i></button></div><textarea id="clipboard-popup-area" class="w-full h-48 bg-gray-50 dark:bg-slate-900 rounded-lg p-3 resize-none outline-none text-sm font-mono border border-slate-200 dark:border-slate-700 focus:border-primary-500 mb-4 text-inherit"></textarea><div class="flex justify-end gap-3"><button onclick="clearClipboard()" class="px-4 py-2 text-sm text-red-500">Clear</button><button onclick="copyClipboard()" class="px-4 py-2 text-sm bg-primary-600 text-white rounded-lg">Copy</button></div></div></div>
+    <div id="cloud-modal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"><div class="bg-card p-6 rounded-2xl shadow-2xl w-full max-w-md border border-slate-200 dark:border-slate-800"><h2 class="text-xl font-bold mb-4 flex items-center gap-2"><i data-lucide="cloud" class="w-5 h-5 text-primary-500"></i> Google Drive Sync</h2><button onclick="closeCloudModal()" class="absolute top-4 right-4 opacity-60 hover:opacity-100"><i data-lucide="x" class="w-5 h-5"></i></button><input type="text" id="cloud-url" placeholder="Google Script URL" class="input-field mb-4"><div class="flex justify-end gap-2"><button onclick="closeCloudModal()" class="px-4 py-2 text-sm opacity-60">Cancel</button><button onclick="saveCloudSettings()" class="px-4 py-2 text-sm bg-primary-600 text-white rounded-lg">Connect</button></div><button onclick="disconnectCloud()" class="w-full mt-4 text-xs text-red-400 py-2 border-t border-slate-100 dark:border-slate-800">Disconnect</button></div></div>
+
     <script>
-        // --- 1. STATE & CLOUD LOGIC ---
+        function safeJSONParse(key, defaultVal) { try { const item = localStorage.getItem(key); return item ? JSON.parse(item) : defaultVal; } catch (e) { return defaultVal; } }
+        
         const AppData = {
-            tasks: JSON.parse(localStorage.getItem('dash_tasks')) || [],
-            links: JSON.parse(localStorage.getItem('dash_links')) || [
-                {id: 1, name: 'Google', url: 'https://google.com', color: 'bg-blue-500'},
-                {id: 2, name: 'GitHub', url: 'https://github.com', color: 'bg-slate-500'},
-                {id: 3, name: 'YouTube', url: 'https://youtube.com', color: 'bg-red-500'},
-                {id: 4, name: 'ChatGPT', url: 'https://chat.openai.com', color: 'bg-teal-500'}
-            ],
-            reminders: JSON.parse(localStorage.getItem('dash_reminders')) || [],
+            tasks: safeJSONParse('dash_tasks', []),
+            links: safeJSONParse('dash_links', [{id:1,name:'Google',url:'https://google.com',color:'bg-blue-500'}]),
+            reminders: safeJSONParse('dash_reminders', []),
             timer: 25,
-            theme: localStorage.getItem('dash_theme') || 'dark',
+            themeMode: localStorage.getItem('dash_theme_mode') || 'dark',
+            timezone: localStorage.getItem('dash_timezone') || 'local',
             notes: localStorage.getItem('dash_notes') || '',
-            // Cloud Config now just stores the URL
-            cloud: JSON.parse(localStorage.getItem('dash_gdrive_config')) || { url: '' }
+            clipboard: localStorage.getItem('dash_clipboard') || '',
+            cloud: safeJSONParse('dash_gdrive_config', { url: '' }),
+            roster: safeJSONParse('dash_roster', {}),
+            shiftColors: safeJSONParse('dash_shift_colors', { general: '#fef08a', morning: '#fde047', afternoon: '#fdba74', night: '#86efac', est: '#ccfbf1', oncall: '#fee2e2' }),
+            uiColors: safeJSONParse('dash_ui_colors', { bg: '', card: '', text: '', primary: '' }),
+            uiSettings: safeJSONParse('dash_ui_settings', { fontFamily: 'Inter', fontSize: 16, bold: false, italic: false, underline: false, quoteSize: 14, cardHeight: 340, gridWidth: 1300 }),
+            cardStyles: safeJSONParse('dash_card_styles', {})
         };
 
-        let syncTimeout;
+        const FALLBACK_QUOTES = [ { text: "Believe you can and you're halfway there.", author: "Theodore Roosevelt" }, { text: "Action is the foundational key to all success.", author: "Pablo Picasso" } ];
+        const SHIFTS = [ { id: 'off', label: 'Off' }, { id: 'morning', label: 'M' }, { id: 'afternoon', label: 'A' }, { id: 'night', label: 'N' }, { id: 'general', label: 'G' }, { id: 'est', label: 'E' }, { id: 'on-call', label: 'OC' } ];
+        let calDate = new Date(); let holidayCache = {}; let editingCardId = null;
 
-        // Save Data (Local + Cloud)
+        // --- SCIENTIFIC CALCULATOR LOGIC ---
+        let calcHist = safeJSONParse('dash_calc_hist', []);
+        let isDegree = true;
+        let lastAns = 0;
+
+        function openCalcModal() { document.getElementById('calc-modal').classList.remove('hidden'); renderCalcHistory(); }
+        function closeCalcModal() { document.getElementById('calc-modal').classList.add('hidden'); }
+        function toggleDeg() { isDegree = !isDegree; document.getElementById('btn-deg').innerText = isDegree ? 'Deg' : 'Rad'; document.getElementById('deg-indicator').innerText = isDegree ? 'DEG' : 'RAD'; }
+        
+        function calcInput(val) {
+            const screen = document.getElementById('calc-screen');
+            if(val === 'C') screen.value = '0';
+            else if(val === 'DEL') screen.value = screen.value.slice(0, -1) || '0';
+            else if(val === '=') {
+                try {
+                    // Safe Eval Replacement
+                    let expr = screen.value
+                        .replace(/×/g, '*')
+                        .replace(/÷/g, '/')
+                        .replace(/π/g, 'Math.PI')
+                        .replace(/e/g, 'Math.E')
+                        .replace(/ln\(/g, 'Math.log(')
+                        .replace(/log\(/g, 'Math.log10(')
+                        .replace(/sq\(/g, 'Math.sqrt(')
+                        .replace(/\^/g, '**');
+
+                    // Handle Trig
+                    const trigMatch = /(sin|cos|tan)\(([^)]+)\)/g;
+                    expr = expr.replace(trigMatch, (match, func, arg) => {
+                        let inner = arg;
+                        // Determine if inner expression is complex
+                        // For simplicity, wrap inner in conversion if degree
+                        return `Math.${func}(${isDegree ? `(${inner}) * Math.PI / 180` : inner})`;
+                    });
+
+                    // Factorial (Simple)
+                    if(expr.includes('!')) {
+                        const num = parseInt(expr.replace('!', ''));
+                        let f = 1; for(let i=2; i<=num; i++) f*=i;
+                        screen.value = f;
+                        return;
+                    }
+
+                    const res = eval(expr);
+                    calcHist.unshift(`${screen.value} = ${res}`);
+                    if(calcHist.length > 20) calcHist.pop();
+                    localStorage.setItem('dash_calc_hist', JSON.stringify(calcHist));
+                    renderCalcHistory();
+                    lastAns = res;
+                    screen.value = parseFloat(res.toFixed(8)); // Clean floating point errors
+                } catch { screen.value = 'Error'; }
+            } 
+            else if(val === 'ans') { screen.value = (screen.value === '0' ? '' : screen.value) + lastAns; }
+            else if(['sin','cos','tan','ln','log','sq'].includes(val)) { screen.value = (screen.value === '0' ? '' : screen.value) + val + '('; }
+            else if(val === 'pow') { screen.value += '^'; }
+            else if(val === 'inv') { screen.value = `1/(${screen.value})`; }
+            else if(val === 'exp') { screen.value += 'e'; } // Scientific notation e
+            else {
+                if(screen.value === '0' && !['.','+','-','*','/'].includes(val)) screen.value = val; else screen.value += val;
+            }
+        }
+        function renderCalcHistory() {
+            document.getElementById('calc-history-list').innerHTML = calcHist.map(h => `<div class="p-2 border-b border-slate-200 dark:border-slate-700 break-all text-xs">${h}</div>`).join('');
+        }
+        function clearCalcHistory() { calcHist = []; localStorage.removeItem('dash_calc_hist'); renderCalcHistory(); }
+
+        // --- SUBNET CALCULATOR ---
+        function openSubnetModal() { document.getElementById('subnet-modal').classList.remove('hidden'); }
+        function calculateSubnet() {
+            const ip = document.getElementById('subnet-ip').value;
+            const cidr = parseInt(document.getElementById('subnet-cidr').value);
+            if(!ip || !cidr) return;
+
+            const ipParts = ip.split('.').map(Number);
+            if(ipParts.length !== 4) { alert("Invalid IP"); return; }
+            const ipBin = (ipParts[0]<<24) | (ipParts[1]<<16) | (ipParts[2]<<8) | ipParts[3];
+            const mask = ~((1<<(32-cidr))-1);
+            
+            const netBin = ipBin & mask;
+            const broadBin = netBin | (~mask);
+            
+            const toIP = (num) => `${(num>>>24)&255}.${(num>>>16)&255}.${(num>>>8)&255}.${num&255}`;
+            
+            const netAddr = toIP(netBin);
+            const broadAddr = toIP(broadBin);
+            const hosts = Math.pow(2, 32-cidr) - 2;
+            const maskAddr = toIP(mask);
+            const range = (hosts > 0) ? `${toIP(netBin+1)} - ${toIP(broadBin-1)}` : 'N/A';
+            const short = `${netAddr}/${cidr}`;
+
+            const createRow = (label, val) => `
+                <div class="tool-result-row">
+                    <span>${label}</span>
+                    <div class="flex items-center gap-2">
+                        <strong id="sub-${label.replace(/\s/g,'')}">${val}</strong>
+                        <button class="copy-btn" onclick="copyText('${val}')" title="Copy"><i data-lucide="copy" class="w-3 h-3"></i></button>
+                    </div>
+                </div>`;
+
+            document.getElementById('subnet-results').innerHTML = 
+                createRow('Short', short) +
+                createRow('Network Address', netAddr) +
+                createRow('Broadcast Address', broadAddr) +
+                createRow('Subnet Mask', maskAddr) +
+                createRow('Total Hosts', hosts > 0 ? hosts : 0) +
+                createRow('Host Range', range);
+            lucide.createIcons();
+        }
+
+        function copyText(txt) {
+            navigator.clipboard.writeText(txt).then(() => showToast('Copied: ' + txt));
+        }
+
+        // --- CONVERTER LOGIC (UPDATED WITH LIVE RATES) ---
+        const convCategories = [
+            { id: 'length', icon: 'ruler', label: 'Length' },
+            { id: 'weight', icon: 'scale', label: 'Weight' },
+            { id: 'temp', icon: 'thermometer', label: 'Temp' },
+            { id: 'area', icon: 'square', label: 'Area' },
+            { id: 'volume', icon: 'box', label: 'Volume' },
+            { id: 'time', icon: 'clock', label: 'Time' },
+            { id: 'data', icon: 'hard-drive', label: 'Data' },
+            { id: 'currency', icon: 'dollar-sign', label: 'Currency' }
+        ];
+
+        const convUnits = {
+            length: { 'm': 1, 'km': 1000, 'cm': 0.01, 'mm': 0.001, 'in': 0.0254, 'ft': 0.3048, 'mi': 1609.34 },
+            weight: { 'g': 1, 'kg': 1000, 'mg': 0.001, 'lb': 453.592, 'oz': 28.3495 },
+            temp: { 'C': 'c', 'F': 'f', 'K': 'k' },
+            area: { 'm²': 1, 'ft²': 0.092903, 'in²': 0.00064516, 'acre': 4046.86, 'ha': 10000 },
+            volume: { 'l': 1, 'ml': 0.001, 'm³': 1000, 'gal': 3.78541, 'qt': 0.946353, 'pt': 0.473176 },
+            time: { 's': 1, 'min': 60, 'hr': 3600, 'day': 86400, 'wk': 604800, 'yr': 31536000 },
+            data: { 'B': 1, 'KB': 1024, 'MB': 1048576, 'GB': 1073741824, 'TB': 1099511627776 },
+            currency: { 'USD': 1, 'EUR': 1, 'GBP': 1, 'INR': 1, 'JPY': 1, 'CAD': 1, 'AUD': 1 } // Placeholders
+        };
+
+        let currConvType = 'length';
+        let currencyCache = null;
+        
+        function openConverterModal() { 
+            const tabContainer = document.getElementById('conv-tabs');
+            tabContainer.innerHTML = '';
+            convCategories.forEach(cat => {
+                const btn = document.createElement('button');
+                btn.className = `conv-tab ${cat.id === 'length' ? 'active' : ''}`;
+                btn.id = `btn-cat-${cat.id}`;
+                btn.onclick = () => setConvType(cat.id);
+                btn.innerHTML = `<i data-lucide="${cat.icon}" class="w-5 h-5"></i><span>${cat.label}</span>`;
+                tabContainer.appendChild(btn);
+            });
+            lucide.createIcons();
+            document.getElementById('converter-modal').classList.remove('hidden'); 
+            setConvType('length'); 
+        }
+
+        async function setConvType(type) {
+            currConvType = type;
+            document.querySelectorAll('.conv-tab').forEach(b => b.classList.remove('active'));
+            document.getElementById(`btn-cat-${type}`).classList.add('active');
+            
+            const disclaimer = document.getElementById('currency-disclaimer');
+            const spinner = document.getElementById('rate-spinner');
+            const rateMsg = document.getElementById('rate-msg');
+
+            if(type === 'currency') {
+                disclaimer.classList.remove('hidden');
+                spinner.style.display = 'inline-block';
+                rateMsg.innerText = "Fetching live rates...";
+                
+                if(!currencyCache) {
+                    try {
+                        // Fetch real rates from Frankfurter (free, open source, no key)
+                        const res = await fetch('https://api.frankfurter.app/latest?from=USD');
+                        const data = await res.json();
+                        currencyCache = { 'USD': 1, ...data.rates };
+                        rateMsg.innerText = "Live rates (Frankfurter)";
+                        convUnits.currency = currencyCache;
+                    } catch(e) {
+                        rateMsg.innerText = "Fetch failed. Using fallback.";
+                        // Fallback static rates
+                         convUnits.currency = { 'USD': 1, 'EUR': 0.92, 'GBP': 0.79, 'INR': 83.1, 'JPY': 148.5, 'CAD': 1.35, 'AUD': 1.52 };
+                    }
+                } else {
+                     rateMsg.innerText = "Live rates (Cached)";
+                }
+                spinner.style.display = 'none';
+            } else {
+                disclaimer.classList.add('hidden');
+            }
+
+            const units = Object.keys(convUnits[type]);
+            const fill = (id) => {
+                const sel = document.getElementById(id); sel.innerHTML = '';
+                units.forEach(u => { const opt = document.createElement('option'); opt.value = u; opt.innerText = u.toUpperCase(); sel.appendChild(opt); });
+            };
+            fill('conv-from-unit'); fill('conv-to-unit');
+            document.getElementById('conv-to-unit').value = units[1] || units[0];
+            convert();
+        }
+
+        function convert() {
+            const val = parseFloat(document.getElementById('conv-from-val').value);
+            const from = document.getElementById('conv-from-unit').value;
+            const to = document.getElementById('conv-to-unit').value;
+            const resBox = document.getElementById('conv-to-val');
+            
+            if (isNaN(val)) { resBox.value = ''; return; }
+
+            if(currConvType === 'temp') {
+                let cel;
+                if(from === 'C') cel = val;
+                else if(from === 'F') cel = (val - 32) * 5/9;
+                else if(from === 'K') cel = val - 273.15;
+
+                if(to === 'C') resBox.value = cel.toFixed(2);
+                else if(to === 'F') resBox.value = (cel * 9/5 + 32).toFixed(2);
+                else if(to === 'K') resBox.value = (cel + 273.15).toFixed(2);
+            } else if (currConvType === 'currency') {
+                 // Base is USD (from fetch or static)
+                 // Rate = Target / Base
+                 const rateFrom = convUnits.currency[from];
+                 const rateTo = convUnits.currency[to];
+                 const res = (val / rateFrom) * rateTo;
+                 resBox.value = res.toFixed(2);
+            } else {
+                const base = val * convUnits[currConvType][from];
+                const res = base / convUnits[currConvType][to];
+                resBox.value = (res < 0.001 || res > 10000) ? res.toExponential(4) : parseFloat(res.toFixed(4));
+            }
+        }
+
+        // --- EXISTING FUNCTIONS (Preserved) ---
         function saveData() {
-            // 1. Local Save
             localStorage.setItem('dash_tasks', JSON.stringify(AppData.tasks));
             localStorage.setItem('dash_links', JSON.stringify(AppData.links));
             localStorage.setItem('dash_reminders', JSON.stringify(AppData.reminders));
             localStorage.setItem('dash_notes', AppData.notes);
-            localStorage.setItem('dash_theme', AppData.theme);
-
-            // 2. Cloud Save (Debounced)
-            if(AppData.cloud.url) {
-                updateCloudStatus('syncing');
-                clearTimeout(syncTimeout);
-                syncTimeout = setTimeout(pushToCloud, 2000); // Wait 2s
-            }
+            localStorage.setItem('dash_clipboard', AppData.clipboard);
+            localStorage.setItem('dash_theme_mode', AppData.themeMode);
+            localStorage.setItem('dash_timezone', AppData.timezone);
+            localStorage.setItem('dash_roster', JSON.stringify(AppData.roster));
+            localStorage.setItem('dash_shift_colors', JSON.stringify(AppData.shiftColors));
+            localStorage.setItem('dash_ui_colors', JSON.stringify(AppData.uiColors));
+            localStorage.setItem('dash_ui_settings', JSON.stringify(AppData.uiSettings));
+            localStorage.setItem('dash_card_styles', JSON.stringify(AppData.cardStyles));
+            if(AppData.cloud.url) updateCloudStatus('unsaved');
         }
 
-        // --- CLOUD FUNCTIONS (Google Apps Script) ---
-        async function pushToCloud() {
-            try {
-                // Prepare data payload
-                const payload = JSON.stringify({ 
-                    tasks: AppData.tasks, 
-                    links: AppData.links, 
-                    reminders: AppData.reminders, 
-                    notes: AppData.notes,
-                    theme: AppData.theme 
-                });
-
-                // Google Apps Script requires text/plain for CORS simplicity with POST
-                const res = await fetch(AppData.cloud.url, {
-                    method: 'POST',
-                    body: payload 
-                });
-
-                const result = await res.json();
-                
-                if(result.status === 'success') {
-                    updateCloudStatus('online');
-                    console.log("Drive Save Success");
-                } else {
-                    throw new Error(result.message || "Unknown Error");
-                }
-            } catch(e) {
-                updateCloudStatus('offline');
-                console.error("Cloud Save Failed:", e);
-            }
-        }
-
-        async function pullFromCloud() {
-            if(!AppData.cloud.url) return;
-            
-            updateCloudStatus('syncing');
-            try {
-                // GET request to the Google Script
-                const res = await fetch(AppData.cloud.url);
-                const data = await res.json();
-                
-                // Merge Data if it exists
-                if(data.tasks) AppData.tasks = data.tasks;
-                if(data.links) AppData.links = data.links;
-                if(data.reminders) AppData.reminders = data.reminders;
-                if(data.notes) AppData.notes = data.notes;
-                if(data.theme) AppData.theme = data.theme;
-                
-                // Update UI
-                refreshAllUI();
-                updateCloudStatus('online');
-            } catch(e) {
-                updateCloudStatus('offline');
-                console.error("Cloud Pull Failed:", e);
-            }
-        }
-
-        // --- UI UPDATERS ---
-        function refreshAllUI() {
-            initTheme();
-            renderTasks();
-            renderLinks();
-            renderReminders();
-            document.getElementById('notes-area').value = AppData.notes;
-        }
-
-        // --- CLOUD MODAL LOGIC ---
-        function openCloudModal() {
-            document.getElementById('cloud-modal').classList.remove('hidden');
-            document.getElementById('cloud-url').value = AppData.cloud.url;
-        }
-        function closeCloudModal() {
-            document.getElementById('cloud-modal').classList.add('hidden');
-        }
-        function saveCloudSettings() {
-            const url = document.getElementById('cloud-url').value.trim();
-            
-            if(url && url.includes('script.google.com')) {
-                AppData.cloud = { url: url };
-                localStorage.setItem('dash_gdrive_config', JSON.stringify(AppData.cloud));
-                closeCloudModal();
-                pullFromCloud(); // Initial Sync
-            } else {
-                alert("Please enter a valid Google Apps Script URL.");
-            }
-        }
-        function disconnectCloud() {
-            if(confirm("Disconnect Drive? Local data will remain.")) {
-                AppData.cloud = { url: '' };
-                localStorage.removeItem('dash_gdrive_config');
-                updateCloudStatus('hidden');
-                closeCloudModal();
-            }
-        }
+        function showToast(msg) { const t = document.getElementById('toast'); t.innerText = msg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 3000); }
 
         function updateCloudStatus(status) {
-            const badge = document.getElementById('cloud-badge');
-            const wrapper = document.getElementById('cloud-status');
-            const dot = document.getElementById('cloud-dot');
-            const text = document.getElementById('cloud-text');
+            const dot = document.getElementById('cloud-dot'); const text = document.getElementById('cloud-text');
+            dot.className = 'w-2 h-2 rounded-full';
+            if(status === 'online') { dot.classList.add('bg-green-500', 'shadow-[0_0_8px_#22c55e]'); text.innerText = "Synced"; }
+            else if (status === 'syncing') { dot.classList.add('bg-yellow-500', 'animate-pulse'); text.innerText = "Syncing..."; }
+            else if (status === 'unsaved') { dot.classList.add('bg-yellow-500'); text.innerText = "Unsaved Changes"; }
+            else { dot.classList.add('bg-gray-400'); text.innerText = "Not Connected"; }
+        }
 
-            if(status === 'hidden') {
-                wrapper.classList.add('hidden');
-                wrapper.classList.remove('flex');
-                badge.classList.remove('hidden'); 
-                return;
-            }
+        async function uploadToDrive() {
+            if(!AppData.cloud.url) return openCloudModal();
+            updateCloudStatus('syncing'); showToast("Uploading...");
+            try { await fetch(AppData.cloud.url,{method:'POST',body:JSON.stringify(AppData), headers: {'Content-Type': 'text/plain'}}); updateCloudStatus('online'); showToast("Saved to Drive"); } catch(e) { updateCloudStatus('offline'); showToast("Upload Failed"); console.error(e); }
+        }
 
-            badge.classList.add('hidden');
-            wrapper.classList.remove('hidden');
-            wrapper.classList.add('flex');
-            dot.className = 'status-dot';
+        async function downloadFromDrive() {
+            if(!AppData.cloud.url) return openCloudModal();
+            if(!confirm("Overwrite local data?")) return;
+            updateCloudStatus('syncing'); showToast("Downloading...");
+            try {
+                const res = await fetch(AppData.cloud.url);
+                const data = await res.json();
+                Object.assign(AppData, data);
+                saveData(); refreshUI(); updateCloudStatus('online'); showToast("Updated from Drive");
+            } catch(e) { updateCloudStatus('offline'); showToast("Download Failed"); console.error(e); }
+        }
+
+        function applyCustomColors() {
+            const root = document.documentElement;
+            if(AppData.uiColors.bg) root.style.setProperty('--bg-body', AppData.uiColors.bg); else root.style.removeProperty('--bg-body');
+            if(AppData.uiColors.card) root.style.setProperty('--bg-card', AppData.uiColors.card); else root.style.removeProperty('--bg-card');
+            if(AppData.uiColors.text) root.style.setProperty('--text-main', AppData.uiColors.text); else root.style.removeProperty('--text-main');
+            if(AppData.uiColors.primary) { root.style.setProperty('--primary-500', AppData.uiColors.primary); root.style.setProperty('--primary-600', AppData.uiColors.primary); } else { root.style.removeProperty('--primary-500'); root.style.removeProperty('--primary-600'); }
             
-            if(status === 'online') {
-                dot.classList.add('status-online');
-                text.innerText = "Drive Synced";
-            } else if (status === 'syncing') {
-                dot.classList.add('status-syncing');
-                text.innerText = "Saving...";
-            } else {
-                dot.classList.add('status-offline');
-                text.innerText = "Error";
-            }
-        }
+            root.style.setProperty('--font-family', AppData.uiSettings.fontFamily);
+            root.style.setProperty('--html-font-size', AppData.uiSettings.fontSize + 'px');
+            root.style.setProperty('--font-weight-mod', AppData.uiSettings.bold ? '700' : '400');
+            root.style.setProperty('--font-style-mod', AppData.uiSettings.italic ? 'italic' : 'normal');
+            root.style.setProperty('--text-decoration-mod', AppData.uiSettings.underline ? 'underline' : 'none');
+            root.style.setProperty('--quote-font-size', (AppData.uiSettings.quoteSize || 14) + 'px');
+            root.style.setProperty('--card-height', (AppData.uiSettings.cardHeight || 340) + 'px'); 
+            root.style.setProperty('--grid-max-width', (AppData.uiSettings.gridWidth || 1300) + 'px');
 
-        // --- THEME ---
-        function initTheme() {
-            const html = document.documentElement;
-            const icon = document.getElementById('theme-icon');
-            if(AppData.theme === 'dark') {
-                html.classList.add('dark'); icon.setAttribute('data-lucide', 'sun');
-            } else {
-                html.classList.remove('dark'); icon.setAttribute('data-lucide', 'moon');
-            }
-            lucide.createIcons();
-        }
-        function toggleTheme() {
-            AppData.theme = AppData.theme === 'dark' ? 'light' : 'dark';
-            saveData();
-            initTheme();
-        }
-
-        // --- CLOCK ---
-        function updateClock() {
-            const now = new Date();
-            document.getElementById('header-clock').innerText = now.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
-            document.getElementById('header-date').innerText = now.toLocaleDateString(undefined, {weekday:'long', day:'numeric', month:'long'});
-            const h = now.getHours();
-            const greet = h < 12 ? 'Good Morning' : h < 18 ? 'Good Afternoon' : 'Good Evening';
-            document.getElementById('header-greeting').innerText = `${greet}, User.`;
-            // Reminders
-            const currentMin = `${now.getHours()}:${now.getMinutes() < 10 ? '0' : ''}${now.getMinutes()}`;
-            AppData.reminders.forEach(r => {
-                if(r.time === currentMin && !r.notified) {
-                    if(Notification.permission === "granted") new Notification("Reminder", {body: r.text});
-                    alert(`🔔 ${r.text}`); r.notified = true; saveData();
+            ['calendar', 'timer', 'tasks', 'links', 'notes', 'reminders', 'apps'].forEach(id => {
+                const el = document.getElementById(`card-${id}`);
+                const style = AppData.cardStyles[id];
+                if(el) {
+                    if(style && style.bg) el.style.backgroundColor = style.bg; else el.style.removeProperty('background-color');
+                    if(style && style.text) el.style.color = style.text; else el.style.removeProperty('color');
                 }
             });
         }
-        setInterval(updateClock, 1000);
 
-        // --- TIMER ---
-        let timerInterval, timeLeft = AppData.timer * 60, isRunning = false;
-        function updateTimerUI() {
-            const m = Math.floor(timeLeft / 60);
-            const s = timeLeft % 60;
-            document.getElementById('timer-display').innerText = `${m}:${s < 10 ? '0' : ''}${s}`;
-        }
-        function toggleTimer() {
-            const btnIcon = document.getElementById('play-icon');
-            if(isRunning) {
-                clearInterval(timerInterval); isRunning = false;
-                btnIcon.parentElement.innerHTML = `<i id="play-icon" data-lucide="play" class="w-6 h-6 ml-1 fill-current"></i>`;
-            } else {
-                isRunning = true;
-                btnIcon.parentElement.innerHTML = `<i id="play-icon" data-lucide="pause" class="w-6 h-6 fill-current"></i>`;
-                timerInterval = setInterval(() => {
-                    if(timeLeft > 0) { timeLeft--; updateTimerUI(); }
-                    else { resetTimer(); alert("Focus Complete!"); }
-                }, 1000);
-            }
-            lucide.createIcons();
-        }
-        function resetTimer() {
-            clearInterval(timerInterval); isRunning = false; timeLeft = AppData.timer * 60; updateTimerUI();
-            document.querySelector('#play-icon').parentElement.innerHTML = `<i id="play-icon" data-lucide="play" class="w-6 h-6 ml-1 fill-current"></i>`;
-            lucide.createIcons();
-        }
-        function editTimer() {
-            if(isRunning) return;
-            const val = prompt("Minutes:", AppData.timer);
-            if(val && !isNaN(val)) { AppData.timer = parseInt(val); resetTimer(); }
-        }
+        function openCardSettings(id) { editingCardId = id; const style = AppData.cardStyles[id] || {}; document.getElementById('card-bg-input').value = style.bg || (AppData.themeMode === 'dark' ? '#1e293b' : '#ffffff'); document.getElementById('card-text-input').value = style.text || (AppData.themeMode === 'dark' ? '#ffffff' : '#0f172a'); document.getElementById('card-settings-modal').classList.remove('hidden'); }
+        function saveCardStyle() { if(!editingCardId) return; AppData.cardStyles[editingCardId] = { bg: document.getElementById('card-bg-input').value, text: document.getElementById('card-text-input').value }; saveData(); applyCustomColors(); document.getElementById('card-settings-modal').classList.add('hidden'); }
+        function resetCardStyle() { if(editingCardId && AppData.cardStyles[editingCardId]) { delete AppData.cardStyles[editingCardId]; saveData(); applyCustomColors(); } document.getElementById('card-settings-modal').classList.add('hidden'); }
 
-        // --- TASKS ---
-        function renderTasks() {
-            const list = document.getElementById('task-list');
-            list.innerHTML = '';
-            if(AppData.tasks.length===0) list.innerHTML = '<div class="text-center opacity-50 text-sm mt-8 text-slate-500">No tasks.</div>';
-            AppData.tasks.forEach(t => {
-                const el = document.createElement('div');
-                el.className = `flex items-center justify-between p-3 rounded-lg mb-2 transition group bg-slate-50 hover:bg-slate-100 border border-slate-200 dark:bg-[#0f172a] dark:hover:bg-slate-800 dark:border-transparent`;
-                el.innerHTML = `
-                    <div class="flex items-center gap-3 cursor-pointer overflow-hidden" onclick="toggleTask(${t.id})">
-                        <div class="w-5 h-5 rounded border flex items-center justify-center transition ${t.completed ? 'bg-blue-600 border-blue-600' : 'border-slate-300 dark:border-slate-600'}">${t.completed ? '<i data-lucide="check" class="w-3 h-3 text-white"></i>' : ''}</div>
-                        <span class="text-sm truncate text-slate-700 dark:text-slate-300 ${t.completed ? 'line-through opacity-50' : ''}">${t.text}</span>
-                    </div>
-                    <button onclick="deleteTask(${t.id})" class="opacity-0 group-hover:opacity-100 opacity-60 hover:text-red-500 transition"><i data-lucide="trash-2" class="w-4 h-4"></i></button>`;
-                list.appendChild(el);
-            });
-            lucide.createIcons();
-        }
-        function addTask(e) { e.preventDefault(); const inp=document.getElementById('task-input'); if(!inp.value.trim()) return; AppData.tasks.push({id:Date.now(), text:inp.value, completed:false}); inp.value=''; saveData(); renderTasks(); }
-        function toggleTask(id) { AppData.tasks = AppData.tasks.map(t=>t.id===id?{...t,completed:!t.completed}:t); saveData(); renderTasks(); }
-        function deleteTask(id) { AppData.tasks = AppData.tasks.filter(t=>t.id!==id); saveData(); renderTasks(); }
-
-        // --- LINKS ---
-        function renderLinks() {
-            const grid = document.getElementById('links-grid'); grid.innerHTML = '';
-            AppData.links.forEach(l => {
-                const el = document.createElement('a'); el.href = l.url; el.target = "_blank";
-                el.className = `flex items-center gap-3 p-4 rounded-lg transition group relative border border-slate-200 shadow-sm hover:shadow-md bg-white hover:bg-slate-50 dark:bg-[#0f172a] dark:hover:bg-slate-800 dark:border-transparent dark:shadow-none`;
-                if(!l.color) l.color = 'bg-blue-500';
-                el.innerHTML = `<div class="w-2 h-2 rounded-full ${l.color} shadow-[0_0_8px_currentColor]"></div><span class="text-sm font-medium truncate text-slate-700 dark:text-slate-200">${l.name}</span><button onclick="deleteLink(event, ${l.id})" class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 hover:text-red-500 transition"><i data-lucide="x" class="w-3 h-3"></i></button>`;
-                grid.appendChild(el);
-            });
-            lucide.createIcons();
-        }
-        function addLinkPrompt() {
-            if(AppData.links.length>=8) return alert("Limit reached.");
-            const name = prompt("Name:"); if(!name) return; let url = prompt("URL:"); if(!url) return;
-            if(!url.startsWith('http')) url = 'https://' + url;
-            const colors = ['bg-blue-500','bg-red-500','bg-green-500','bg-purple-500','bg-orange-500','bg-teal-500'];
-            AppData.links.push({id:Date.now(), name, url, color:colors[AppData.links.length%colors.length]}); saveData(); renderLinks();
-        }
-        function deleteLink(e, id) { e.preventDefault(); e.stopPropagation(); if(confirm("Remove?")) { AppData.links=AppData.links.filter(l=>l.id!==id); saveData(); renderLinks(); }}
-
-        // --- REMINDERS ---
-        function renderReminders() {
-            const list = document.getElementById('reminder-list'); list.innerHTML = '';
-            if(AppData.reminders.length===0) list.innerHTML = '<div class="text-center opacity-50 text-sm mt-8 text-slate-500">No reminders.</div>';
-            AppData.reminders.sort((a,b)=>a.time.localeCompare(b.time)).forEach(r => {
-                const el = document.createElement('div');
-                el.className = `flex items-center justify-between p-3 rounded-lg mb-2 group bg-slate-50 dark:bg-[#0f172a]`;
-                el.innerHTML = `<div class="flex gap-3 items-center"><span class="font-mono text-blue-600 dark:text-blue-500 text-xs bg-blue-100 dark:bg-blue-500/10 px-2 py-1 rounded">${r.time}</span><span class="text-sm opacity-90 text-slate-700 dark:text-slate-300">${r.text}</span></div><button onclick="deleteReminder(${r.id})" class="opacity-0 group-hover:opacity-100 hover:text-red-500 transition"><i data-lucide="x" class="w-4 h-4"></i></button>`;
-                list.appendChild(el);
-            });
-            lucide.createIcons();
-        }
-        function addReminderPrompt() { const text=prompt("Text:"); if(!text) return; const time=prompt("Time (HH:MM):"); if(!time) return; AppData.reminders.push({id:Date.now(), text, time, notified:false}); saveData(); renderReminders(); }
-        function deleteReminder(id) { AppData.reminders=AppData.reminders.filter(r=>r.id!==id); saveData(); renderReminders(); }
-
-        // --- NOTES ---
-        const notes = document.getElementById('notes-area');
-        notes.addEventListener('input', e => { AppData.notes = e.target.value; saveData(); });
-
-        // --- INIT ---
-        refreshAllUI();
-        updateClock();
-        updateTimerUI();
+        function openUICustomizer() { document.getElementById('ui-bg-color').value = AppData.uiColors.bg || (AppData.themeMode === 'dark' ? '#0f172a' : '#fffbf0'); document.getElementById('ui-card-color').value = AppData.uiColors.card || (AppData.themeMode === 'dark' ? '#1e293b' : '#ffffff'); document.getElementById('ui-text-color').value = AppData.uiColors.text || (AppData.themeMode === 'dark' ? '#ffffff' : '#0f172a'); document.getElementById('ui-primary-color').value = AppData.uiColors.primary || '#3b82f6'; document.getElementById('ui-font-family').value = AppData.uiSettings.fontFamily || 'Inter'; document.getElementById('ui-font-size').value = AppData.uiSettings.fontSize || 16; document.getElementById('ui-quote-size').value = AppData.uiSettings.quoteSize || 14; document.getElementById('ui-card-height').value = AppData.uiSettings.cardHeight || 340; document.getElementById('ui-grid-width').value = AppData.uiSettings.gridWidth || 1300; document.getElementById('font-size-val').innerText = (AppData.uiSettings.fontSize || 16) + 'px'; document.getElementById('quote-size-val').innerText = (AppData.uiSettings.quoteSize || 14) + 'px'; document.getElementById('card-height-val').innerText = (AppData.uiSettings.cardHeight || 340) + 'px'; document.getElementById('grid-width-val').innerText = (AppData.uiSettings.gridWidth || 1300) + 'px'; updateStyleBtns(); document.getElementById('ui-custom-modal').classList.remove('hidden'); }
         
-        // Check Cloud
-        if(AppData.cloud.url) {
-            pullFromCloud();
-        } else {
-            updateCloudStatus('hidden');
+        document.getElementById('ui-bg-color').addEventListener('input', e => { AppData.uiColors.bg = e.target.value; applyCustomColors(); saveData(); });
+        document.getElementById('ui-card-color').addEventListener('input', e => { AppData.uiColors.card = e.target.value; applyCustomColors(); saveData(); });
+        document.getElementById('ui-text-color').addEventListener('input', e => { AppData.uiColors.text = e.target.value; applyCustomColors(); saveData(); });
+        document.getElementById('ui-primary-color').addEventListener('input', e => { AppData.uiColors.primary = e.target.value; applyCustomColors(); saveData(); });
+        document.getElementById('ui-font-family').addEventListener('change', e => { AppData.uiSettings.fontFamily = e.target.value; applyCustomColors(); saveData(); });
+        document.getElementById('ui-font-size').addEventListener('input', e => { AppData.uiSettings.fontSize = e.target.value; document.getElementById('font-size-val').innerText = e.target.value + 'px'; applyCustomColors(); saveData(); });
+        document.getElementById('ui-quote-size').addEventListener('input', e => { AppData.uiSettings.quoteSize = e.target.value; document.getElementById('quote-size-val').innerText = e.target.value + 'px'; applyCustomColors(); saveData(); });
+        document.getElementById('ui-card-height').addEventListener('input', e => { AppData.uiSettings.cardHeight = e.target.value; document.getElementById('card-height-val').innerText = e.target.value + 'px'; applyCustomColors(); saveData(); });
+        document.getElementById('ui-grid-width').addEventListener('input', e => { AppData.uiSettings.gridWidth = e.target.value; document.getElementById('grid-width-val').innerText = e.target.value + 'px'; applyCustomColors(); saveData(); });
+        function toggleFontStyle(style) { AppData.uiSettings[style] = !AppData.uiSettings[style]; updateStyleBtns(); applyCustomColors(); saveData(); }
+        function updateStyleBtns() { document.getElementById('btn-bold').classList.toggle('active', AppData.uiSettings.bold); document.getElementById('btn-italic').classList.toggle('active', AppData.uiSettings.italic); document.getElementById('btn-underline').classList.toggle('active', AppData.uiSettings.underline); }
+        function resetUICustomization() { AppData.uiColors = { bg: '', card: '', text: '', primary: '' }; AppData.uiSettings = { fontFamily: 'Inter', fontSize: 16, bold: false, italic: false, underline: false, quoteSize: 14, cardHeight: 340, gridWidth: 1300 }; applyCustomColors(); saveData(); document.getElementById('ui-custom-modal').classList.add('hidden'); showToast("Theme Reset"); }
+
+        async function renderCalendar() {
+            const grid = document.getElementById('calendar-grid'); const label = document.getElementById('cal-month-label');
+            const year = calDate.getFullYear(); const month = calDate.getMonth();
+            const holidays = await fetchHolidays(year); const todayStr = new Date().toISOString().split('T')[0];
+            label.innerText = calDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }); grid.innerHTML = '';
+            const firstDay = new Date(year, month, 1).getDay(); const daysInMonth = new Date(year, month + 1, 0).getDate(); const totalCells = 42; 
+            for(let i=0; i<totalCells; i++) {
+                const dayNum = i - firstDay + 1; const cell = document.createElement('div'); cell.className = `cal-cell`;
+                if(dayNum > 0 && dayNum <= daysInMonth) {
+                    const dStr = `${year}-${String(month+1).padStart(2,'0')}-${String(dayNum).padStart(2,'0')}`;
+                    const savedShift = AppData.roster[dStr] || 'off'; const isToday = dStr === todayStr; const holiday = holidays[dStr];
+                    if(savedShift !== 'off') {
+                        let bgColor = 'transparent';
+                        if(savedShift === 'general') bgColor = AppData.shiftColors.general;
+                        else if(savedShift === 'morning') bgColor = AppData.shiftColors.morning;
+                        else if(savedShift === 'afternoon') bgColor = AppData.shiftColors.afternoon;
+                        else if(savedShift === 'night') bgColor = AppData.shiftColors.night;
+                        else if(savedShift === 'est') bgColor = AppData.shiftColors.est;
+                        else if(savedShift === 'on-call') bgColor = AppData.shiftColors.oncall;
+                        cell.style.backgroundColor = bgColor; cell.style.color = '#0f172a'; cell.style.fontWeight = 'bold';
+                    } else if (isToday) { cell.classList.add('today'); }
+                    cell.innerText = dayNum;
+                    if(holiday) { const dot = document.createElement('div'); dot.className = 'holiday-dot'; cell.appendChild(dot); cell.title = holiday; }
+                    cell.onclick = () => { let idx = SHIFTS.findIndex(s => s.id === (AppData.roster[dStr] || 'off')); idx = (idx + 1) % SHIFTS.length; if(SHIFTS[idx].id === 'off') delete AppData.roster[dStr]; else AppData.roster[dStr] = SHIFTS[idx].id; saveData(); renderCalendar(); };
+                } else { cell.style.pointerEvents = 'none'; cell.style.opacity = '0.1'; } grid.appendChild(cell);
+            }
+        }
+        function changeMonth(dir) { calDate.setMonth(calDate.getMonth() + dir); renderCalendar(); }
+        async function fetchHolidays(year) { if(holidayCache[year]) return holidayCache[year]; try { const res = await fetch(`https://date.nager.at/api/v3/PublicHolidays/${year}/IN`); const data = await res.json(); const map = {}; data.forEach(h => map[h.date] = h.localName); holidayCache[year] = map; return map; } catch(e) { return {}; } }
+
+        function addTask(e){ e.preventDefault(); const i=document.getElementById('task-input'); if(i.value.trim()){ AppData.tasks.push({id:Date.now(), text:i.value, completed:false}); i.value=''; saveData(); renderTasks(); } }
+        function renderTasks(){const l=document.getElementById('task-list');l.innerHTML='';AppData.tasks.forEach(t=>{const d=document.createElement('div');d.className='flex items-center justify-between p-3 rounded-lg mb-2 bg-slate-50 dark:bg-slate-800/30 group border border-slate-200 dark:border-transparent';d.innerHTML=`<div class="flex gap-3 cursor-pointer" onclick="toggleTask(${t.id})"><div class="w-5 h-5 rounded border ${t.completed?'bg-primary-600 border-primary-600':'border-slate-300 dark:border-slate-600'} flex items-center justify-center text-white">${t.completed?'<i data-lucide="check" class="w-3 h-3"></i>':''}</div><span class="${t.completed?'line-through opacity-50':''} text-sm text-inherit">${t.text}</span></div><button onclick="delTask(${t.id})" class="opacity-0 group-hover:opacity-100 text-red-500"><i data-lucide="trash-2" class="w-4 h-4"></i></button>`;l.appendChild(d);});lucide.createIcons();}
+        function toggleTask(id){AppData.tasks=AppData.tasks.map(t=>t.id===id?{...t,completed:!t.completed}:t);saveData();renderTasks();}
+        function delTask(id){AppData.tasks=AppData.tasks.filter(t=>t.id!==id);saveData();renderTasks();}
+
+        function setTimer(minutes) { AppData.timer = minutes; resetTimer(); }
+        let modalResolve = null;
+        function openGenericModal(title, fields) { return new Promise((resolve) => { const modal = document.getElementById('input-modal'); document.getElementById('input-modal-title').innerText = title; const bodyEl = document.getElementById('input-modal-body'); bodyEl.innerHTML = ''; fields.forEach((field, idx) => { const wrap = document.createElement('div'); const lbl = document.createElement('label'); lbl.className = "block text-xs font-bold opacity-60 uppercase mb-1"; lbl.innerText = field.label; const inp = document.createElement('input'); inp.type = field.type || 'text'; inp.className = "input-field mb-2"; inp.value = field.value || ''; inp.id = `modal-input-${idx}`; wrap.appendChild(lbl); wrap.appendChild(inp); bodyEl.appendChild(wrap); }); modal.classList.remove('hidden'); modalResolve = resolve; document.getElementById('input-modal-save').onclick = () => { const results = fields.map((_, idx) => document.getElementById(`modal-input-${idx}`).value); modal.classList.add('hidden'); resolve(results); }; }); }
+        function closeInputModal() { document.getElementById('input-modal').classList.add('hidden'); if(modalResolve) modalResolve(null); }
+        async function openLinkModal() { const res = await openGenericModal('Add Link', [{label:'Name'}, {label:'URL'}]); if(res&&res[0]&&res[1]){ AppData.links.push({id:Date.now(), name:res[0], url:res[1].startsWith('http')?res[1]:'https://'+res[1], color:'bg-primary-500'}); saveData(); renderLinks(); } }
+        async function openTimerModal() { const res = await openGenericModal('Timer', [{label:'Minutes', type:'number', value:AppData.timer}]); if(res&&res[0]){ AppData.timer=parseInt(res[0]); resetTimer(); } }
+        async function openReminderModal() { const res = await openGenericModal('Reminder', [{label:'Text'},{label:'Due Date & Time',type:'datetime-local'}]); if(res&&res[0]&&res[1]){ AppData.reminders.push({id:Date.now(), text:res[0], time:res[1], notified:false}); saveData(); renderReminders(); } }
+
+        function toggleSettingsMenu(e) { 
+            e.stopPropagation(); 
+            document.getElementById('apps-menu').classList.remove('show'); // Close other
+            document.getElementById('settings-menu').classList.toggle('show'); 
+        }
+        function toggleAppsMenu(e) { 
+            e.stopPropagation(); 
+            document.getElementById('settings-menu').classList.remove('show'); // Close other
+            document.getElementById('apps-menu').classList.toggle('show'); 
+        }
+        function closeDropdowns(e) { 
+            if(!e.target.closest('.dropdown-menu') && !e.target.closest('.header-btn')) {
+                document.querySelectorAll('.dropdown-menu').forEach(el => el.classList.remove('show'));
+            }
         }
 
-        // Import/Export
+        function openShiftSettingsModal() { document.getElementById('color-general').value=AppData.shiftColors.general; document.getElementById('color-morning').value=AppData.shiftColors.morning; document.getElementById('color-afternoon').value=AppData.shiftColors.afternoon; document.getElementById('color-night').value=AppData.shiftColors.night; document.getElementById('shift-settings-modal').classList.remove('hidden'); }
+        function saveShiftSettings() { AppData.shiftColors.general=document.getElementById('color-general').value; AppData.shiftColors.morning=document.getElementById('color-morning').value; AppData.shiftColors.afternoon=document.getElementById('color-afternoon').value; AppData.shiftColors.night=document.getElementById('color-night').value; saveData(); renderCalendar(); document.getElementById('shift-settings-modal').classList.add('hidden'); }
+        function openRosterModal() { document.getElementById('roster-date-input').value = new Date().toISOString().split('T')[0]; document.getElementById('roster-shift-input').value='morning'; document.getElementById('roster-modal').classList.remove('hidden'); }
+        function saveRosterEntry() { const d=document.getElementById('roster-date-input').value; const s=document.getElementById('roster-shift-input').value; if(d){ if(s==='off') delete AppData.roster[d]; else AppData.roster[d]=s; saveData(); renderCalendar(); document.getElementById('roster-modal').classList.add('hidden'); } }
+        function openTimezoneModal() { document.getElementById('timezone-select').value = AppData.timezone || 'local'; document.getElementById('timezone-modal').classList.remove('hidden'); }
+        function saveTimezone() { AppData.timezone = document.getElementById('timezone-select').value; saveData(); updateClock(); document.getElementById('timezone-modal').classList.add('hidden'); }
+        function initTheme() { const h=document.documentElement; const icon = document.getElementById('theme-icon'); if(AppData.themeMode==='dark'){ h.classList.add('dark'); icon.setAttribute('data-lucide', 'sun'); } else { h.classList.remove('dark'); icon.setAttribute('data-lucide', 'moon'); } lucide.createIcons(); applyCustomColors(); }
+        function toggleTheme() { AppData.themeMode = AppData.themeMode==='dark'?'light':'dark'; saveData(); initTheme(); }
+        let tInt, tLeft=AppData.timer*60, tRun=false;
+        function updateT(){ document.getElementById('timer-display').innerText=`${Math.floor(tLeft/60)}:${tLeft%60<10?'0':''}${tLeft%60}`; }
+        function toggleTimer(){ if(tRun){ clearInterval(tInt); tRun=false; } else { tRun=true; tInt=setInterval(()=>{ if(tLeft>0){ tLeft--; updateT(); } else { resetTimer(); alert("Done!"); } },1000); } document.getElementById('play-icon').setAttribute('data-lucide', tRun?'pause':'play'); lucide.createIcons(); }
+        function resetTimer(){ clearInterval(tInt); tRun=false; tLeft=AppData.timer*60; updateT(); document.getElementById('play-icon').setAttribute('data-lucide','play'); lucide.createIcons(); }
+        function renderLinks(){const g=document.getElementById('links-grid');g.innerHTML='';AppData.links.forEach(l=>{const e=document.createElement('a');e.href=l.url;e.target='_blank';e.className='flex gap-2 p-3 rounded-lg border border-slate-200 dark:border-slate-700 items-center bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800 transition';e.innerHTML=`<div class="w-2 h-2 rounded-full ${l.color}"></div><span class="text-xs font-bold truncate">${l.name}</span>`;g.appendChild(e);});}
+        function renderReminders(){const l=document.getElementById('reminder-list');l.innerHTML=''; AppData.reminders.forEach(r=>{const e=document.createElement('div');e.className='flex justify-between p-2 text-sm text-inherit border-b border-slate-100 dark:border-slate-800 last:border-0'; let displayTime = r.time; try { const d = new Date(r.time); if(!isNaN(d)) { displayTime = d.toLocaleDateString(undefined, {month:'short', day:'numeric'}) + ' ' + d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}); } } catch(err) {} e.innerHTML=`<span><span class="opacity-60 text-xs font-bold mr-2 uppercase">${displayTime}</span> ${r.text}</span><button onclick="delRem(${r.id})" class="text-red-500 hover:text-red-600">&times;</button>`;l.appendChild(e);});}
+        function delRem(id){AppData.reminders=AppData.reminders.filter(r=>r.id!==id);saveData();renderReminders();}
+        function openCloudModal(){document.getElementById('cloud-modal').classList.remove('hidden');}
+        function closeCloudModal(){document.getElementById('cloud-modal').classList.add('hidden');}
+        function saveCloudSettings(){const u=document.getElementById('cloud-url').value; if(u){AppData.cloud={url:u};localStorage.setItem('dash_gdrive_config',JSON.stringify(AppData.cloud));closeCloudModal(); uploadToDrive();}}
+        function disconnectCloud() { if(confirm("Disconnect?")) { AppData.cloud = { url: '' }; localStorage.removeItem('dash_gdrive_config'); updateCloudStatus('offline'); closeCloudModal(); } }
+        function toggleClipboardModal() { document.getElementById('clipboard-modal').classList.toggle('hidden'); if(!document.getElementById('clipboard-modal').classList.contains('hidden')) document.getElementById('clipboard-popup-area').value=AppData.clipboard; }
+        function copyClipboard() { document.getElementById('clipboard-popup-area').select(); document.execCommand('copy'); }
+        function clearClipboard() { if(confirm("Clear?")) { AppData.clipboard=''; document.getElementById('clipboard-popup-area').value=''; saveData(); } }
+        document.getElementById('clipboard-popup-area').addEventListener('input', e=>{AppData.clipboard=e.target.value; saveData();});
         function exportData() { const blob=new Blob([JSON.stringify(AppData)], {type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='backup.json'; a.click(); }
-        function importData(inp) { const f=inp.files[0]; if(!f) return; const r=new FileReader(); r.onload=e=>{ try{ const d=JSON.parse(e.target.result); if(d.tasks) { AppData.tasks=d.tasks; AppData.links=d.links; AppData.reminders=d.reminders; AppData.notes=d.notes; AppData.theme=d.theme; saveData(); refreshAllUI(); } } catch(err){alert("Invalid file");} }; r.readAsText(f); }
-        if(Notification.permission!=="granted") Notification.requestPermission();
+        function importData(inp) { const f=inp.files[0]; if(!f) return; const r=new FileReader(); r.onload=e=>{ try{ const d=JSON.parse(e.target.result); if(d.tasks) { Object.assign(AppData,d); saveData(); refreshUI(); } } catch(err){alert("Invalid file");} }; r.readAsText(f); }
+        function refreshUI() { initTheme(); renderTasks(); renderCalendar(); renderLinks(); renderReminders(); document.getElementById('notes-area').value=AppData.notes; }
+        async function fetchQuote() { try { const res = await fetch('https://dummyjson.com/quotes/random'); const data = await res.json(); document.getElementById('footer-quote').innerText = `"${data.quote}"`; document.getElementById('footer-author').innerText = `- ${data.author}`; } catch(e) { const fallback = FALLBACK_QUOTES[Math.floor(Math.random()*FALLBACK_QUOTES.length)]; document.getElementById('footer-quote').innerText = `"${fallback.text}"`; document.getElementById('footer-author').innerText = `- ${fallback.author}`; } }
+        function updateClock() { const now = new Date(); const options = AppData.timezone && AppData.timezone !== 'local' ? { timeZone: AppData.timezone } : {}; try { document.getElementById('header-clock').innerText = now.toLocaleTimeString([], { ...options, hour:'2-digit', minute:'2-digit' }); document.getElementById('header-date').innerText = now.toLocaleDateString(undefined, { ...options, weekday:'long', day:'numeric', month:'long' }); const hour = parseInt(now.toLocaleTimeString('en-GB', { ...options, hour:'2-digit', hour12: false })); const greet = hour < 12 ? 'Good Morning' : hour < 18 ? 'Good Afternoon' : 'Good Evening'; document.getElementById('header-greeting').innerText = `${greet}, User.`; } catch(e) { document.getElementById('header-clock').innerText = now.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}); } }
+        function instantInit() { updateClock(); document.getElementById('notes-area').addEventListener('input', e => { AppData.notes = e.target.value; saveData(); }); refreshUI(); fetchQuote(); if(AppData.cloud.url) { updateCloudStatus('online'); } else { updateCloudStatus('offline'); } if(navigator.geolocation) navigator.geolocation.getCurrentPosition(async (pos) => { try { const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${pos.coords.latitude}&longitude=${pos.coords.longitude}&current_weather=true`); const data = await res.json(); document.getElementById('weather-widget').classList.remove('hidden'); document.getElementById('weather-widget').classList.add('flex'); document.getElementById('weather-temp').innerText = `${Math.round(data.current_weather.temperature)}°`; } catch(e){} }); }
+        instantInit(); setInterval(updateClock, 1000);
     </script>
 </body>
 </html>
